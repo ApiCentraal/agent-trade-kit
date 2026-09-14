@@ -11,6 +11,18 @@
 
 ## [Unreleased]
 
+## [1.4.7] - 2026-09-14
+
+### 修复
+
+- `market indicator`、`market oi-history`、`market oi-change` 和 `market candles` 现在会在本地拦截无效的 `--bar` 值并列出合法值。`market candles` 严格区分 `1m` 与 `1M`；OI 与 indicator 接口接受大小写不敏感的 bar 别名。
+- `market pair-spread` 现在会在本地拦截无效的 `--bar` 值；仅接受精确的小写 `5m` 与 `15m`。
+- AIGC 端点错误码 41001、41020、41030、50029 和 51000 现在会提供可执行的参数修正建议，不再仅给出通用重试提示。
+
+### 变更
+
+- 已发布的 CLI、MCP 和 skill 包 metadata 版本同步至 `1.4.7`。
+
 ## [1.4.6] - 2026-09-07
 
 ### 修复

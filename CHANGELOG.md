@@ -11,6 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.7] - 2026-09-14
+
+### Fixed
+
+- `market indicator`, `market oi-history`, `market oi-change`, and `market candles` now reject invalid `--bar` values locally with the supported values. `market candles` treats `1m` and `1M` as distinct values; OI and indicator endpoints accept case-insensitive bar aliases.
+- `market pair-spread` now rejects invalid `--bar` values locally; only exact, lowercase `5m` and `15m` are accepted.
+- AIGC endpoint errors 41001, 41020, 41030, 50029, and 51000 now provide actionable parameter guidance instead of a generic retry suggestion.
+
+### Changed
+
+- Published CLI, MCP, and skill-pack metadata versions are synchronized to `1.4.7`.
+
 ## [1.4.6] - 2026-09-07
 
 ### Fixed
