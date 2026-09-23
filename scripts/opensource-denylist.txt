@@ -37,9 +37,7 @@ regex:okg-block\.sg\.larksuite\.com
 regex:okcoin\.atlassian\.net
 
 # ----- Internal ticket / identifier prefixes -----
-regex:\[TRDATA-[0-9]+\]
-regex:\[OKG-[0-9]+\]
-regex:\[ALGO-[0-9]+\]
+regex:(^|[^A-Za-z0-9])(TRDATA|OKG|ALGO)-[0-9]+
 
 # ----- Common secret patterns -----
 regex:glpat-[A-Za-z0-9_-]{20,}
