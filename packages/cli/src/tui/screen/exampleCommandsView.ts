@@ -34,11 +34,19 @@ const EXAMPLE_COMMANDS = [
  * - none
  * RULES:
  * - Rows are truncated to width; the list is static so it never leaks session data.
+ * - The "Use" badge is omitted when the command itself needs nearly the full row, so text never clips mid-token.
  */
 export function renderExampleCommandsLines(width: number, maxRows: number): string[] {
   const lines: string[] = [];
   for (const command of EXAMPLE_COMMANDS.slice(0, maxRows)) {
-    const text = `${WHITE}${ansiSlice(command, Math.max(8, width - 7))}${RESET}`;
+    const fitsBadge = command.length + 5 <= width;
+    const text = fitsBadge
+      ? `${WHITE}${command}${RESET}`
+      : `${WHITE}${ansiSlice(command, Math.max(8, width - 1))}${RESET}`;
+    if (!fitsBadge) {
+      lines.push(ansiPadEnd(text, width));
+      continue;
+    }
     const badge = `${CYAN}Use${RESET}`;
     const pad = Math.max(1, width - ansiWidth(text) - 3);
     lines.push(ansiPadEnd(`${text}${" ".repeat(pad)}${badge}`, width));

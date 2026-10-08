@@ -71,7 +71,7 @@ export function renderCreateBotView(options: {
   const chips = keptChips.join(" ");
   const inputBody = ansiPadEnd(
     ` ${GREEN}›${RESET} ${intentText ?? `${DIM}${hint ?? "Describe your trading idea, or configure manually…"}${RESET}`}`,
-    inner - 4,
+    inner - 2,
   );
 
   const form = renderWizardForm(draft, state, inner);

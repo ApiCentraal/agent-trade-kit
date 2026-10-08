@@ -9,6 +9,7 @@
  */
 import type { TuiNavItem } from "../types.js";
 import { ansiPadEnd } from "./ansiPadEnd.js";
+import { ansiSlice } from "./ansiSlice.js";
 import { ansiWidth } from "./ansiWidth.js";
 import { BLACK, CYAN, DIM, GRAY, GREEN, GREEN_BG, RESET, WHITE } from "./palette.js";
 import { SIDEBAR_WIZARD_STEPS } from "./sidebarModel.js";
@@ -38,11 +39,17 @@ export function renderSidebarLines(
   wizardStep: number,
   maxLines?: number,
 ): string[] {
-  const full = buildLines(items, innerWidth, wizardStep, { echoes: true, separators: true, headers: true });
-  if (maxLines === undefined || full.length <= maxLines) return full;
-  const compact = buildLines(items, innerWidth, wizardStep, { echoes: false, separators: false, headers: true });
-  if (compact.length <= maxLines) return compact;
-  return buildLines(items, innerWidth, wizardStep, { echoes: false, separators: false, headers: false }).slice(0, maxLines);
+  const tiers: Array<{ echoes: boolean; separators: boolean; headers: boolean }> = [
+    { echoes: true, separators: true, headers: true },
+    { echoes: true, separators: false, headers: true },
+    { echoes: false, separators: false, headers: true },
+    { echoes: false, separators: false, headers: false },
+  ];
+  for (const tier of tiers) {
+    const lines = buildLines(items, innerWidth, wizardStep, tier);
+    if (maxLines === undefined || lines.length <= maxLines) return lines;
+  }
+  return buildLines(items, innerWidth, wizardStep, tiers[tiers.length - 1]).slice(0, maxLines);
 }
 
 /**
@@ -93,7 +100,7 @@ function buildLines(
       continue;
     }
     const badge = `${DIM}[${item.key}]${RESET}`;
-    const label = `${WHITE}${item.label}${RESET}`;
+    const label = `${WHITE}${ansiSlice(item.label, Math.max(4, innerWidth - 5))}${RESET}`;
     const pad = Math.max(1, innerWidth - ansiWidth(label) - 4);
     lines.push(` ${label}${" ".repeat(pad)}${badge}`);
   }

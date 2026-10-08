@@ -71,7 +71,14 @@ export function renderHeaderBar(state: TuiDashboardState, width: number): string
     return index === 0 ? `${WHITE}${label}${RESET}` : `${GRAY}${label}${RESET}`;
   }).join("   ");
   const left = `${brand}  ${DIM}│${RESET}  ${tabs}`;
-  const right = `${modeSeg}  ${GRAY}Profile:${RESET} ${profile}  ${apiBadge}  ${DIM}Spot${RESET}`;
-  const pad = Math.max(1, width - ansiWidth(left) - ansiWidth(right));
+  const rightTiers = [
+    `${modeSeg}  ${GRAY}Profile:${RESET} ${profile}  ${apiBadge}  ${DIM}Spot${RESET}`,
+    `${modeSeg}  ${profile}  ${apiBadge}`,
+    `${modeSeg}  ${apiBadge}`,
+    `${modeSeg}`,
+  ];
+  const leftWidth = ansiWidth(left);
+  const right = rightTiers.find((tier) => leftWidth + ansiWidth(tier) + 1 <= width) ?? rightTiers[rightTiers.length - 1];
+  const pad = Math.max(1, width - leftWidth - ansiWidth(right));
   return [ansiPadEnd(`${left}${" ".repeat(pad)}${right}`, width), `${DIM}${"─".repeat(width)}${RESET}`];
 }

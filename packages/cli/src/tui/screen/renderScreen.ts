@@ -68,14 +68,27 @@ export function renderScreen(ctx: ScreenContext): string {
   const mainWidth = width - sidebarWidth - rightWidth;
   const headerHeight = 2;
   const statusHeight = 2;
-  const logHeight = Math.max(4, Math.min(8, Math.floor(ctx.rows * 0.16)));
-  const bodyHeight = ctx.rows - headerHeight - logHeight - statusHeight;
+  let logHeight = Math.max(4, Math.min(8, Math.floor(ctx.rows * 0.16)));
+  let bodyHeight = ctx.rows - headerHeight - logHeight - statusHeight;
+
+  // Grant the sidebar one extra row when that flips it into the wizard-echo tier: the step
+  // mirror under "Create bot" is part of the target layout and worth one log line.
+  const navItems = buildNavItems();
+  let sidebarLines = renderSidebarLines(navItems, sidebarWidth - 2, ctx.wizardStep, bodyHeight - 2);
+  if (logHeight > 4) {
+    const taller = renderSidebarLines(navItems, sidebarWidth - 2, ctx.wizardStep, bodyHeight - 1);
+    if (taller.length > sidebarLines.length && taller.length <= bodyHeight - 1) {
+      logHeight -= 1;
+      bodyHeight += 1;
+      sidebarLines = taller;
+    }
+  }
 
   const header = renderHeaderBar(ctx.state, width);
   const sidebar = boxPane({
     width: sidebarWidth,
     height: bodyHeight,
-    lines: renderSidebarLines(buildNavItems(), sidebarWidth - 2, ctx.wizardStep, bodyHeight - 2),
+    lines: sidebarLines,
   });
 
   const main = boxPane({

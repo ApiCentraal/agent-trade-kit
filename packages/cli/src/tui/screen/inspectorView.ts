@@ -66,7 +66,9 @@ export function renderInspectorLines(model: InspectorModel, width: number): stri
   for (const check of model.checks) {
     const glyph = check.status === "pass" ? `${GREEN}✓${RESET}` : check.status === "fail" ? `${RED}✗${RESET}` : `${GRAY}•${RESET}`;
     const left = `${glyph} ${WHITE}${ansiSlice(check.label, Math.max(6, width - 10))}${RESET}`;
-    const detailText = ansiSlice(check.detail, Math.max(4, width - ansiWidth(left) - 2));
+    const detailBudget = Math.max(4, width - ansiWidth(left) - 2);
+    const detailText =
+      check.detail.length > detailBudget ? `${ansiSlice(check.detail, Math.max(3, detailBudget - 1))}…` : check.detail;
     const pad = Math.max(1, width - ansiWidth(left) - ansiWidth(detailText));
     lines.push(ansiPadEnd(`${left}${" ".repeat(pad)}${DIM}${detailText}${RESET}`, width));
   }
