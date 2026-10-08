@@ -1,8 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as os from "node:os";
 import { execFileSync } from "node:child_process";
 import { configFilePath } from "./config/toml.js";
+import { homeDir } from "./utils/home-dir.js";
 
 export type ClientId = "claude-desktop" | "cursor" | "windsurf" | "vscode" | "claude-code";
 
@@ -23,7 +23,7 @@ export const CLIENT_NAMES: Record<ClientId, string> = {
 export const SUPPORTED_CLIENTS = Object.keys(CLIENT_NAMES) as ClientId[];
 
 function appData(): string {
-  return process.env.APPDATA ?? path.join(os.homedir(), "AppData", "Roaming");
+  return process.env.APPDATA ?? path.join(homeDir(), "AppData", "Roaming");
 }
 
 const CLAUDE_CONFIG_FILE = "claude_desktop_config.json";
@@ -35,7 +35,7 @@ const CLAUDE_CONFIG_FILE = "claude_desktop_config.json";
  * Returns the config file path if found, null otherwise.
  */
 function findMsStoreClaudePath(): string | null {
-  const localAppData = process.env.LOCALAPPDATA ?? path.join(os.homedir(), "AppData", "Local");
+  const localAppData = process.env.LOCALAPPDATA ?? path.join(homeDir(), "AppData", "Local");
   const packagesDir = path.join(localAppData, "Packages");
   try {
     const entries = fs.readdirSync(packagesDir);
@@ -56,7 +56,7 @@ function findMsStoreClaudePath(): string | null {
 }
 
 export function getConfigPath(client: ClientId): string | null {
-  const home = os.homedir();
+  const home = homeDir();
   const platform = process.platform;
   switch (client) {
     case "claude-desktop":

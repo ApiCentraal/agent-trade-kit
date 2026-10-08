@@ -1,11 +1,17 @@
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
 import type { ToolSpec } from "./types.js";
 import { asRecord, readNumber, readString } from "./helpers.js";
 import type { LogEntry } from "../utils/logger.js";
+import { homeDir } from "../utils/home-dir.js";
 
-const DEFAULT_LOG_DIR = path.join(os.homedir(), ".okx", "logs");
+/**
+ * Default audit log directory under the user's home.
+ * Resolved per call so test environments that override HOME stay isolated.
+ */
+function defaultLogDir(): string {
+  return path.join(homeDir(), ".okx", "logs");
+}
 
 function getLogPaths(logDir: string, days = 7): string[] {
   const paths: string[] = [];
@@ -83,7 +89,7 @@ export function registerAuditTools(): ToolSpec[] {
         const since = readString(args, "since");
         const sinceTime = since ? new Date(since).getTime() : undefined;
 
-        let entries = readEntries(DEFAULT_LOG_DIR);
+        let entries = readEntries(defaultLogDir());
 
         if (toolFilter) {
           entries = entries.filter((e) => e.tool === toolFilter);

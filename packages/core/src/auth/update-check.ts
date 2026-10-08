@@ -7,16 +7,23 @@
 
 import { readFileSync, writeFileSync, mkdirSync, unlinkSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { homedir } from "node:os";
 
 import { getAuthStatus, fetchAuthCdnChecksum, installAuthBinary } from "./installer.js";
+import { homeDir } from "../utils/home-dir.js";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const CACHE_PATH = join(homedir(), ".okx", "auth-binary-check.json");
 const CHECK_INTERVAL_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+/**
+ * Cache file location for the CDN checksum check.
+ * Resolved per call so test environments that override HOME stay isolated.
+ */
+function cachePath(): string {
+  return join(homeDir(), ".okx", "auth-binary-check.json");
+}
 
 // ---------------------------------------------------------------------------
 // Cache helpers
@@ -29,8 +36,8 @@ interface BinaryCache {
 
 function readCache(): BinaryCache | null {
   try {
-    if (!existsSync(CACHE_PATH)) return null;
-    const data = JSON.parse(readFileSync(CACHE_PATH, "utf-8")) as Record<string, unknown>;
+    if (!existsSync(cachePath())) return null;
+    const data = JSON.parse(readFileSync(cachePath(), "utf-8")) as Record<string, unknown>;
     if (typeof data.cdnSha256 !== "string" || typeof data.checkedAt !== "number") return null;
     return { cdnSha256: data.cdnSha256, checkedAt: data.checkedAt };
   } catch {
@@ -40,8 +47,8 @@ function readCache(): BinaryCache | null {
 
 function writeCache(cdnSha256: string): void {
   try {
-    mkdirSync(join(homedir(), ".okx"), { recursive: true });
-    writeFileSync(CACHE_PATH, JSON.stringify({ cdnSha256, checkedAt: Date.now() }, null, 2), "utf-8");
+    mkdirSync(join(homeDir(), ".okx"), { recursive: true });
+    writeFileSync(cachePath(), JSON.stringify({ cdnSha256, checkedAt: Date.now() }, null, 2), "utf-8");
   } catch {
     // ignore write failures
   }
@@ -105,7 +112,7 @@ export function updateAuthBinaryCache(sha256: string): void {
  */
 export function clearAuthBinaryCache(): void {
   try {
-    unlinkSync(CACHE_PATH);
+    unlinkSync(cachePath());
   } catch {
     // ignore ENOENT
   }

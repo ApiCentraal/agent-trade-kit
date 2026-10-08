@@ -1,8 +1,8 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
-import { homedir } from "node:os";
 import { parse, stringify } from "smol-toml";
 import { ConfigError } from "../utils/errors.js";
+import { homeDir } from "../utils/home-dir.js";
 
 export { stringify as tomlStringify };
 
@@ -23,7 +23,7 @@ export interface OkxTomlConfig {
 }
 
 export function configFilePath(): string {
-  return join(homedir(), ".okx", "config.toml");
+  return join(homeDir(), ".okx", "config.toml");
 }
 
 /**
