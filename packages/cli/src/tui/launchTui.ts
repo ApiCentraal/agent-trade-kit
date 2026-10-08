@@ -113,33 +113,38 @@ async function launchCompactDashboard(): Promise<void> {
 async function launchPaneDashboard(): Promise<void> {
   const log = new SessionLog();
   let tickers: string[] = [];
-  let lastRefresh: string | undefined;
+  let latencyMs: number | undefined;
   let input = createInterface({ input: process.stdin, output: process.stdout });
   process.stdout.write("\u001b[?25l");
 
-  const draw = (draft: TuiWizardDraft | undefined, mainLines: string[] | undefined, mainTitle: string | undefined): void => {
+  const draw = (draft: TuiWizardDraft | undefined, step: number, hint: string | undefined, intentText?: string): void => {
     const state = getDashboardState();
     process.stdout.write("\u001b[2J\u001b[H");
     process.stdout.write(
       renderScreen({
         state,
-        logEntries: log.tail(5),
+        logEntries: log.tail(6),
         wizardDraft: draft,
-        mainLines,
-        mainTitle,
+        wizardStep: step,
+        wizardHint: hint,
+        intentText,
         tickers,
-        lastRefresh,
+        latencyMs,
+        clock: new Date().toTimeString().slice(0, 8),
         columns: process.stdout.columns ?? 120,
-        rows: process.stdout.rows ?? 36,
+        rows: process.stdout.rows ?? 40,
       }),
     );
   };
 
-  log.add("info", "dashboard ready — select a key to begin");
+  const KNOWN_KEYS = new Set(["w", "l", "r", "q", "1", "2", "4", "5", "6", "7", "8", "9", "0", "a", "b", "c", "e", "f", "g", "h", "k"]);
+
+  log.add("info", "dashboard ready — select a key or describe a bot to begin");
   try {
     while (true) {
-      draw(undefined, undefined, undefined);
-      const choice = (await input.question("  › ")).trim().toLowerCase();
+      draw(undefined, -1, undefined);
+      const raw = (await input.question("  › ")).trim();
+      const choice = raw.toLowerCase();
       if (choice === "q") break;
 
       if (choice === "l") {
@@ -153,13 +158,15 @@ async function launchPaneDashboard(): Promise<void> {
       }
 
       if (choice === "r") {
+        const started = Date.now();
         tickers = refreshTickers(log);
-        lastRefresh = new Date().toTimeString().slice(0, 8);
+        latencyMs = Date.now() - started;
         continue;
       }
 
-      const args = choice === "w"
-        ? await runBotWizard(input, getDashboardState(), (draft, lines, title) => draw(draft, lines, title))
+      const isWizard = choice === "w" || (!KNOWN_KEYS.has(choice) && raw.length > 2);
+      const args = isWizard
+        ? await runBotWizard(input, getDashboardState(), draw, choice === "w" ? undefined : raw)
         : await dispatchNavKey(choice, input, getDashboardState());
 
       if (args === undefined) {
