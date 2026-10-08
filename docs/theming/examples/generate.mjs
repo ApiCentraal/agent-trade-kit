@@ -33,11 +33,13 @@ const state = {
 };
 
 const ANSI_COLORS = { "30": "#4b5563", "31": "#f87171", "32": "#4ade80", "33": "#fbbf24", "34": "#60a5fa", "35": "#c084fc", "36": "#22d3ee", "37": "#e5e7eb", "90": "#6b7280", "91": "#f87171", "92": "#4ade80", "93": "#fbbf24", "94": "#60a5fa", "95": "#c084fc", "96": "#22d3ee", "97": "#f9fafb" };
+const ANSI_BG = { "41": "#dc2626", "42": "#16a34a", "43": "#d97706", "44": "#2563eb", "7": "#e5e7eb" };
+const ESC = "";
 
 function ansiToHtml(text) {
   let html = "";
   let open = false;
-  const re = /\[(\d+(?:;\d+)*)m|\[\d*[A-Za-z]|\[\?\d+[a-z]/g;
+  const re = new RegExp(`${ESC}\\[(\\d+(?:;\\d+)*)m|${ESC}\\[\\d*[A-Za-z]|${ESC}\\[\\?\\d+[a-z]`, "g");
   let last = 0;
   for (const m of text.matchAll(re)) {
     html += escapeHtml(text.slice(last, m.index));
@@ -45,12 +47,17 @@ function ansiToHtml(text) {
     const code = m[1];
     if (code === undefined) continue;
     if (code === "0" || code === "") { if (open) { html += "</span>"; open = false; } continue; }
-    const color = ANSI_COLORS[code.split(";").pop()];
-    if (color) { if (open) html += "</span>"; html += `<span style="color:${color}">`; open = true; }
+    const styles = [];
+    for (const part of code.split(";")) {
+      if (ANSI_BG[part]) styles.push(`background:${ANSI_BG[part]}`, "color:#0b0f14", "font-weight:600");
+      else if (ANSI_COLORS[part]) styles.push(`color:${ANSI_COLORS[part]}`);
+      if (part === "1") styles.push("font-weight:700");
+    }
+    if (styles.length) { if (open) html += "</span>"; html += `<span style="${styles.join(";")}">`; open = true; }
   }
   html += escapeHtml(text.slice(last));
   if (open) html += "</span>";
-  return html.replace(/\r/g, "");
+  return html.replace(/\r/g, "").split("\n").map((line) => line.replace(/[ \t]+(<\/span>)?$/, "$1").replace(/[ \t]+$/, "")).join("\n");
 }
 
 function escapeHtml(s) {
@@ -63,7 +70,7 @@ function page(body, width = 900) {
 <div style="display:flex;align-items:center;gap:7px;padding:12px 16px;border-bottom:1px solid #21262d">
 <span style="width:12px;height:12px;border-radius:50%;background:#ff5f57"></span><span style="width:12px;height:12px;border-radius:50%;background:#febc2e"></span><span style="width:12px;height:12px;border-radius:50%;background:#28c840"></span>
 <span style="margin-left:12px;color:#8b949e;font-size:12px">okx-tui — agent trade kit</span></div>
-<pre style="margin:0;padding:20px 24px;color:#e5e7eb;font-size:13.5px;line-height:1.5;white-space:pre-wrap">${body}</pre>
+<pre style="margin:0;padding:20px 24px;color:#e5e7eb;font-size:12.5px;line-height:1.55;white-space:pre">${body}</pre>
 </div></body></html>`;
 }
 
@@ -92,21 +99,23 @@ async function runSelector(selector, answers, { settleMs = 60 } = {}) {
 }
 
 const logTail = [
-  { time: "14:42:10", level: "info", text: "dashboard ready — select a key to begin" },
-  { time: "14:42:15", level: "info", text: "$ okx market ticker BTC-USDT" },
-  { time: "14:42:15", level: "info", text: "instId: BTC-USDT  last: 64247.3  vol24h: 8192.44" },
-  { time: "14:42:15", level: "info", text: "exit 0 — L for full log" },
+  { time: "10:42:10", level: "info", text: "dashboard ready — select a key or describe a bot" },
+  { time: "10:42:15", level: "info", text: "$ okx market ticker BTC-USDT" },
+  { time: "10:42:15", level: "info", text: "instId: BTC-USDT  last: 64247.3  vol24h: 8192.44" },
+  { time: "10:42:15", level: "info", text: "exit 0 — L for full log" },
 ];
 
 const baseCtx = {
   state,
   wizardDraft: undefined,
-  mainLines: undefined,
-  mainTitle: undefined,
-  tickers: ["BTC 64247.3", "ETH 2403.4", "SOL 162.4"],
-  lastRefresh: "14:42:15",
-  columns: 140,
-  rows: 36,
+  wizardStep: -1,
+  wizardHint: undefined,
+  intentText: undefined,
+  tickers: ["BTC/USDT 64,247.3  +6.42%", "ETH/USDT 2,403.4  +1.18%", "SOL/USDT 162.4  -0.22%"],
+  latencyMs: 32,
+  clock: "10:42:18",
+  columns: 150,
+  rows: 42,
 };
 
 const scenes = [];
@@ -119,20 +128,16 @@ const wizardDraft = {
 };
 scenes.push(["02-bot-wizard", renderScreen({
   ...baseCtx,
-  logEntries: logTail,
-  wizardDraft,
-  mainTitle: "Create bot · 6/6",
-  mainLines: [
-    "  Step 6 · Preview & deploy",
-    "  Create spot grid on BTC-USDT; range=60000–70000; levels=20; capital=100 USDT",
-    "",
-    "  Review before execution",
-    "  Mode: DEMO",
-    "  Profile: demo",
-    "  Action: Create grid on BTC-USDT; range=60000–70000; levels=20; capital=100 USDT",
-    "  Type CONFIRM DEMO CREATE BOT exactly: ",
+  logEntries: [
+    ...logTail,
+    { time: "10:42:31", level: "info", text: "intent parsed — 4 fields prefilled (draft only)" },
+    { time: "10:42:38", level: "info", text: "market ticker BTC-USDT  →  last 64,247.30" },
   ],
-})]);
+  wizardDraft,
+  wizardStep: 5,
+  wizardHint: "Confirm deployment — check the inspector, then confirm below",
+  intentText: "grid bot BTC 100 USDT low risk",
+}) + "\n  Review before execution\n  Mode: DEMO   Profile: demo\n  Action: Create spot grid on BTC-USDT; range=60000-70000; levels=20; capital=100 USDT\n  Type CONFIRM DEMO CREATE BOT exactly: "]);
 
 scenes.push(["03-mutation-menu", await runSelector(selectMutationAction, ["q"])]);
 scenes.push(["04-order-preview-confirmation", await runSelector(selectOrderMutationAction,
@@ -142,6 +147,6 @@ scenes.push(["06-installed-skills", await runSelector(selectSkillAction, ["4"])]
 scenes.push(["07-compact-dashboard", renderDashboard(state, false) + "\n  Choose an action [1–6, A, Q]: "]);
 
 for (const [name, raw] of scenes) {
-  writeFileSync(join(outDir, `${name}.html`), page(ansiToHtml(raw), name.startsWith("0") && !name.includes("compact") ? 1240 : 900));
+  writeFileSync(join(outDir, `${name}.html`), page(ansiToHtml(raw), name.startsWith("0") && !name.includes("compact") ? 1480 : 900));
 }
 console.log(`wrote ${scenes.length} html pages to ${outDir}`);
