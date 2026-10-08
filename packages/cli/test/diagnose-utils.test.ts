@@ -161,7 +161,10 @@ describe("section()", () => {
 
   it("outputs newline before title", () => {
     const output = captureStdout(() => section("Test Section"));
-    assert.ok(output.startsWith("\n"), "should start with newline");
+    // outputLine() uses os.EOL, which is "\r\n" on Windows — either a bare
+    // "\n" (POSIX) or "\r\n" (Windows) satisfies the "starts with a newline"
+    // contract.
+    assert.ok(output.startsWith("\n") || output.startsWith("\r\n"), "should start with newline");
   });
 });
 

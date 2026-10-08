@@ -349,19 +349,19 @@ describe("cmdAuthRemove", () => {
 
     const subDir = join(tempDir, "auth-bin");
     mkdirSync(subDir);
+    // A directory at the binary path makes unlinkSync throw on every platform
+    // (EISDIR on POSIX, EPERM on Windows) without relying on permission bits,
+    // which Windows does not enforce on directories.
     const binPath = join(subDir, "okx-auth");
-    writeFileSync(binPath, Buffer.from("fake-binary"));
+    mkdirSync(binPath);
     process.env.OKX_AUTH_BIN = binPath;
 
-    // Remove write permission from parent dir so unlinkSync throws EACCES.
-    chmodSync(subDir, 0o555);
     const cap = createCapture();
     cap.install();
     try {
       await cmdAuthRemove(true, false);
     } finally {
       cap.restore();
-      chmodSync(subDir, 0o755);
     }
 
     assert.equal(process.exitCode, 1);
@@ -377,19 +377,19 @@ describe("cmdAuthRemove", () => {
 
     const subDir = join(tempDir, "auth-bin-json");
     mkdirSync(subDir);
+    // A directory at the binary path makes unlinkSync throw on every platform
+    // (EISDIR on POSIX, EPERM on Windows) without relying on permission bits,
+    // which Windows does not enforce on directories.
     const binPath = join(subDir, "okx-auth");
-    writeFileSync(binPath, Buffer.from("fake-binary"));
+    mkdirSync(binPath);
     process.env.OKX_AUTH_BIN = binPath;
 
-    // Remove write permission from parent dir so unlinkSync throws EACCES.
-    chmodSync(subDir, 0o555);
     const cap = createCapture();
     cap.install();
     try {
       await cmdAuthRemove(true, true);
     } finally {
       cap.restore();
-      chmodSync(subDir, 0o755);
     }
 
     assert.equal(process.exitCode, 1);

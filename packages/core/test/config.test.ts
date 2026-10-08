@@ -29,9 +29,12 @@ const ENV_KEYS = [
   "OKX_AUTH_BIN",
   "MOCK_AUTH_EXIT",
   "MOCK_AUTH_STATUS_JSON",
+  "HOME",
 ] as const;
 
-type SavedEnv = Partial<Record<(typeof ENV_KEYS)[number], string | undefined>>;
+type SavedEnv = Partial<Record<(typeof ENV_KEYS)[number], string | undefined>> & {
+  __tmpHome?: string;
+};
 
 function saveEnv(): SavedEnv {
   const saved: SavedEnv = {};
@@ -45,6 +48,10 @@ function saveEnv(): SavedEnv {
   // machine logged into e.g. `eea` would break the `global` default assertions).
   // Tests that need an OAuth session override this with the mock binary.
   process.env.OKX_AUTH_BIN = "/nonexistent/path/okx-auth-test";
+  // Hermetic default 2: point HOME at an empty tmpdir so the developer's real
+  // ~/.okx/config.toml cannot leak site/base_url overrides into these tests.
+  saved.__tmpHome = mkdtempSync(join(tmpdir(), "okx-cfg-env-"));
+  process.env.HOME = saved.__tmpHome;
   return saved;
 }
 
@@ -55,6 +62,9 @@ function restoreEnv(saved: SavedEnv): void {
     } else {
       process.env[key] = saved[key];
     }
+  }
+  if (saved.__tmpHome) {
+    rmSync(saved.__tmpHome, { recursive: true, force: true });
   }
 }
 
