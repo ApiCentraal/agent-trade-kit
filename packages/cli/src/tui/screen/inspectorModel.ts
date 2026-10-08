@@ -33,6 +33,7 @@ export interface InspectorModel {
  * INPUT:
  * - state: TuiDashboardState — safe profile and credential readiness
  * - draft: TuiWizardDraft | undefined — in-progress bot configuration, when the wizard is active
+ * - lastAction: string | undefined — last executed `okx …` line with its exit code, for session overview
  * OUTPUT:
  * - InspectorModel — labelled fields, validation checks, and locally estimated order exposure
  * USES:
@@ -44,7 +45,11 @@ export interface InspectorModel {
  * RULES:
  * - Checks never guess: missing values produce "note" entries, contradictions produce "fail".
  */
-export function buildInspectorModel(state: TuiDashboardState, draft: TuiWizardDraft | undefined): InspectorModel {
+export function buildInspectorModel(
+  state: TuiDashboardState,
+  draft: TuiWizardDraft | undefined,
+  lastAction?: string,
+): InspectorModel {
   const checks: InspectorCheck[] = [
     {
       label: "API connection",
@@ -61,6 +66,7 @@ export function buildInspectorModel(state: TuiDashboardState, draft: TuiWizardDr
   const fields: InspectorField[] = [
     { label: "Profile", value: state.activeProfile },
     { label: "Mode", value: state.mode },
+    ...(lastAction ? [{ label: "Last action", value: lastAction }] : []),
   ];
   const estimates: InspectorField[] = [];
 

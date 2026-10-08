@@ -36,10 +36,18 @@ export function renderLogPane(entries: TuiLogEntry[], width: number, height: num
   const visibleRows = Math.max(0, inner - 1);
   const visible = entries.slice(Math.max(0, entries.length - visibleRows));
   const lines: string[] = [tabRow];
+  if (visible.length === 0 && inner > 1) {
+    lines.push(`${DIM}no captured output yet — press a nav key or describe a bot${RESET}`);
+  }
   for (const entry of visible) {
     const color = entry.level === "error" ? RED : entry.level === "warn" ? YELLOW : CYAN;
     const tag = entry.level === "error" ? "ERR" : entry.level === "warn" ? "WARN" : "INFO";
-    lines.push(`${GRAY}${entry.time}${RESET}  ${color}${tag}${RESET}  ${entry.text}`);
+    const text = entry.text.startsWith("$ ")
+      ? `${WHITE}${entry.text}${RESET}`
+      : entry.text.startsWith("exit ")
+        ? `${DIM}${entry.text}${RESET}`
+        : entry.text;
+    lines.push(`${GRAY}${entry.time}${RESET}  ${color}${tag}${RESET}  ${text}`);
   }
   while (lines.length < inner) lines.push(`${DIM}·${RESET}`);
   return boxPane({ width, height, lines });

@@ -1,6 +1,7 @@
 /**
  * FILE: exampleCommandsView.ts
- * PURPOSE: Render the stacked "Example commands" helper panel that mirrors the target's clickable command list.
+ * PURPOSE: Render the stacked "Example commands" helper panel; when the wizard draft already builds a
+ *          valid command, that concrete command leads the list so the panel doubles as a preview.
  * LAYER: component
  * DEPENDS_ON: ./ansiPadEnd.js, ./ansiSlice.js, ./ansiWidth.js, ./palette.js
  * RULES:
@@ -24,6 +25,7 @@ const EXAMPLE_COMMANDS = [
  * INPUT:
  * - width: number — printable width inside the panel
  * - maxRows: number — how many command rows fit
+ * - commands: string[] | undefined — contextual commands (wizard-derived) to lead the static examples
  * OUTPUT:
  * - string[] — styled panel content lines
  * USES:
@@ -36,9 +38,10 @@ const EXAMPLE_COMMANDS = [
  * - Rows are truncated to width; the list is static so it never leaks session data.
  * - The "Use" badge is omitted when the command itself needs nearly the full row, so text never clips mid-token.
  */
-export function renderExampleCommandsLines(width: number, maxRows: number): string[] {
+export function renderExampleCommandsLines(width: number, maxRows: number, commands?: string[]): string[] {
   const lines: string[] = [];
-  for (const command of EXAMPLE_COMMANDS.slice(0, maxRows)) {
+  const list = commands && commands.length > 0 ? commands : EXAMPLE_COMMANDS;
+  for (const command of list.slice(0, maxRows)) {
     const fitsBadge = command.length + 5 <= width;
     const text = fitsBadge
       ? `${WHITE}${command}${RESET}`

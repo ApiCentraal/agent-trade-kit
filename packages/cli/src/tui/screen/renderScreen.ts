@@ -3,11 +3,12 @@
  * PURPOSE: Compose the full control-room frame: header, sidebar, create-bot main pane, the stacked
  *          inspector/example/shortcuts right column, tabbed log pane, and status bar.
  * LAYER: component
- * DEPENDS_ON: ../types.js, ./boxPane.js, ./headerBar.js, ./inspectorModel.js, ./inspectorView.js, ./createBotView.js, ./exampleCommandsView.js, ./shortcutsView.js, ./logPaneView.js, ./sidebarModel.js, ./sidebarView.js, ./statusBar.js, ./ansiPadEnd.js
+ * DEPENDS_ON: ../types.js, ../wizard/buildWizardArgs.js, ./boxPane.js, ./headerBar.js, ./inspectorModel.js, ./inspectorView.js, ./createBotView.js, ./exampleCommandsView.js, ./shortcutsView.js, ./logPaneView.js, ./sidebarModel.js, ./sidebarView.js, ./statusBar.js, ./ansiPadEnd.js
  * RULES:
  * - Pane widths are computed from the live terminal size; callers must only invoke this when usePaneLayout() is true.
  */
 import type { TuiDashboardState, TuiLogEntry, TuiWizardDraft } from "../types.js";
+import { buildWizardArgs } from "../wizard/buildWizardArgs.js";
 import { ansiPadEnd } from "./ansiPadEnd.js";
 import { boxPane } from "./boxPane.js";
 import { renderHeaderBar } from "./headerBar.js";
@@ -108,17 +109,37 @@ export function renderScreen(ctx: ScreenContext): string {
   const shortcutsHeight = bodyHeight >= 26 ? 7 : 5;
   const examplesHeight = Math.max(4, Math.min(9, Math.floor(bodyHeight * 0.24)));
   const inspectorHeight = Math.max(8, bodyHeight - shortcutsHeight - examplesHeight);
+
+  // Last captured command + its exit for the inspector's "Last action" summary row.
+  let lastAction: string | undefined;
+  for (let i = ctx.logEntries.length - 1; i >= 0; i -= 1) {
+    const text = ctx.logEntries[i].text;
+    if (text.startsWith("exit ")) {
+      lastAction = `${lastAction ?? ""} ${text}`.trim();
+    } else if (text.startsWith("$ ")) {
+      lastAction = `${text.slice(2)}${lastAction ? ` · ${lastAction}` : ""}`;
+      break;
+    }
+  }
+
+  // When the wizard draft already produces a command, lead the examples panel with the real thing.
+  let exampleCommands: string[] | undefined;
+  if (ctx.wizardDraft) {
+    const built = buildWizardArgs(ctx.wizardDraft);
+    if (built.ok) exampleCommands = [`okx ${built.args.join(" ")}`];
+  }
+
   const inspector = boxPane({
     width: rightWidth,
     height: inspectorHeight,
     title: "Generated configuration",
-    lines: renderInspectorLines(buildInspectorModel(ctx.state, ctx.wizardDraft), rightWidth - 2),
+    lines: renderInspectorLines(buildInspectorModel(ctx.state, ctx.wizardDraft, lastAction), rightWidth - 2),
   });
   const examples = boxPane({
     width: rightWidth,
     height: examplesHeight,
-    title: "Example commands",
-    lines: renderExampleCommandsLines(rightWidth - 2, examplesHeight - 2),
+    title: exampleCommands ? "Resulting command" : "Example commands",
+    lines: renderExampleCommandsLines(rightWidth - 2, examplesHeight - 2, exampleCommands),
   });
   const shortcuts = boxPane({
     width: rightWidth,
