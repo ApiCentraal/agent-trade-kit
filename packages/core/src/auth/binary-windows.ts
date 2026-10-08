@@ -16,7 +16,7 @@
 import { spawn, type ChildProcess } from "node:child_process";
 import { createServer, type Server } from "node:net";
 import { randomBytes } from "node:crypto";
-import { finalizeToken, spawnFailedError } from "./binary-shared.js";
+import { authSpawnTarget, finalizeToken, spawnFailedError } from "./binary-shared.js";
 
 /** The okx-auth binary requires every pipe name to start with this prefix. */
 const WIN_PIPE_PREFIX = String.raw`\\.\pipe\okx-auth-`;
@@ -79,8 +79,9 @@ export function execAuthTokenWindows(
 
     server.listen(pipeName, () => {
       let child: ChildProcess;
+      const target = authSpawnTarget(binPath, ["token"]);
       try {
-        child = spawn(binPath, ["token"], {
+        child = spawn(target.command, target.args, {
           stdio: ["ignore", "ignore", "inherit"],
           env: { ...process.env, OKX_AUTH_TOKEN_PIPE: pipeName },
           windowsHide: true,

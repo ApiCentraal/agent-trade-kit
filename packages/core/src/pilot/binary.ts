@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
-import { homedir } from "node:os";
 import { join } from "node:path";
+import { homeDir } from "../utils/home-dir.js";
+import { execTarget } from "../utils/exec-target.js";
 import type { PilotBinaryResponse, PilotNode } from "./types.js";
 
 /** Default timeout for the Pilot binary (ms). */
@@ -9,8 +10,13 @@ const EXEC_TIMEOUT_MS = 30_000;
 /** Only allow *.okx.com domains */
 const ALLOWED_DOMAIN_RE = /^[\w.-]+\.okx\.com$/;
 
-/** Directory under the user's home where the binary lives. */
-const PILOT_BIN_DIR = join(homedir(), ".okx", "bin");
+/**
+ * Directory under the user's home where the binary lives.
+ * Resolved per call so test environments that override HOME stay isolated.
+ */
+function pilotBinDir(): string {
+  return join(homeDir(), ".okx", "bin");
+}
 
 /**
  * Return the expected path to the okx-pilot binary.
@@ -21,7 +27,7 @@ export function getPilotBinaryPath(): string {
     return process.env.OKX_PILOT_BINARY_PATH;
   }
   const ext = process.platform === "win32" ? ".exe" : "";
-  return join(PILOT_BIN_DIR, `okx-pilot${ext}`);
+  return join(pilotBinDir(), `okx-pilot${ext}`);
 }
 
 /**
@@ -46,10 +52,11 @@ export function execPilotBinary(
   if (userAgent) {
     args.push("--user-agent", userAgent);
   }
+  const target = execTarget(binPath, args);
   return new Promise((resolve) => {
     execFile(
-      binPath,
-      args,
+      target.command,
+      target.args,
       { timeout: EXEC_TIMEOUT_MS, encoding: "utf-8" },
       (error, stdout) => {
         if (error) {

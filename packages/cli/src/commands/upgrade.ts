@@ -1,11 +1,17 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { homedir } from "node:os";
-import { fetchLatestVersion, fetchDistTags, isNewerVersion } from "@agent-tradekit/core";
+
+import { fetchLatestVersion, fetchDistTags, isNewerVersion, homeDir } from "@agent-tradekit/core";
 
 const PACKAGES = ["@okx_ai/okx-trade-mcp", "@okx_ai/okx-trade-cli"];
-const CACHE_FILE = join(homedir(), ".okx", "last_check");
+/**
+ * Update-check cache path under the user home.
+ * Resolved per call (not at import) so HOME overrides in tests take effect.
+ */
+function cacheFile(): string {
+  return join(homeDir(), ".okx", "last_check");
+}
 const THROTTLE_MS = 12 * 60 * 60 * 1000; // 12 h
 
 // Resolve npm from the same bin directory as the active Node.js binary so we
@@ -27,7 +33,7 @@ export interface UpgradeResult {
 
 function readLastCheck(): number {
   try {
-    return parseInt(readFileSync(CACHE_FILE, "utf-8").trim(), 10) || 0;
+    return parseInt(readFileSync(cacheFile(), "utf-8").trim(), 10) || 0;
   } catch {
     return 0;
   }
@@ -35,8 +41,8 @@ function readLastCheck(): number {
 
 function writeLastCheck(): void {
   try {
-    mkdirSync(join(homedir(), ".okx"), { recursive: true });
-    writeFileSync(CACHE_FILE, String(Math.floor(Date.now() / 1000)), "utf-8");
+    mkdirSync(join(homeDir(), ".okx"), { recursive: true });
+    writeFileSync(cacheFile(), String(Math.floor(Date.now() / 1000)), "utf-8");
   } catch {
     // ignore write failures
   }

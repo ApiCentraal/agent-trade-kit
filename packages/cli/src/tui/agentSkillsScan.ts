@@ -7,7 +7,7 @@
  * - Read-only directory and front-matter inspection; never executes or renders skill file contents.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { homeDir } from "@agent-tradekit/core";
 import { join } from "node:path";
 
 /**
@@ -25,7 +25,7 @@ import { join } from "node:path";
  * RULES:
  * - Only the first 4 KB of SKILL.md are read; directory names are returned verbatim and must be sanitized by the renderer.
  */
-export function listAgentSkillDirs(skillsDir = join(homedir(), ".agents", "skills")): { name: string; version: string }[] {
+export function listAgentSkillDirs(skillsDir = join(homeDir(), ".agents", "skills")): { name: string; version: string }[] {
   if (!existsSync(skillsDir)) return [];
   let entries: string[];
   try {

@@ -6,6 +6,7 @@
  * @internal
  */
 import { AuthenticationError, ConfigError, NotLoggedInError } from "../utils/errors.js";
+import { execTarget } from "../utils/exec-target.js";
 import { EXIT_CODES } from "./types.js";
 
 /**
@@ -64,4 +65,29 @@ export function spawnFailedError(err: Error): ConfigError {
     `Failed to spawn okx-auth: ${err.message}`,
     "Ensure the okx-auth binary exists and is executable.",
   );
+}
+
+/**
+ * PURPOSE: Backwards-compatible alias for utils/exec-target.ts, kept here so
+ *          both binary delivery paths share one import site.
+ * INPUT:
+ * - binPath: string — path from getAuthBinaryPath() (may be a script when
+ *   OKX_AUTH_BIN points at a .js/.mjs/.cjs file, e.g. test fixtures).
+ * - args: string[] — arguments intended for the auth binary.
+ * OUTPUT:
+ * - { command, args } — see execTarget().
+ * USES:
+ * - execTarget from ../utils/exec-target.js.
+ * EFFECT:
+ * - none.
+ * ERRORS:
+ * - none.
+ * RULES:
+ * - Same contract as execTarget; do not add auth-specific behavior here.
+ */
+export function authSpawnTarget(
+  binPath: string,
+  args: string[],
+): { command: string; args: string[] } {
+  return execTarget(binPath, args);
 }

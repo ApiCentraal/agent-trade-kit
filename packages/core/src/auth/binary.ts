@@ -1,15 +1,20 @@
 import { spawn, execFile } from "node:child_process";
-import { homedir } from "node:os";
 import { join } from "node:path";
 import { execAuthTokenWindows } from "./binary-windows.js";
-import { finalizeToken, spawnFailedError } from "./binary-shared.js";
+import { authSpawnTarget, finalizeToken, spawnFailedError } from "./binary-shared.js";
+import { homeDir } from "../utils/home-dir.js";
 import type { AuthStatusResult } from "./types.js";
 
 /** Default timeout for status/token commands (ms). */
 const EXEC_TIMEOUT_MS = 5_000;
 
-/** Directory under the user's home where the binary lives. */
-const AUTH_BIN_DIR = join(homedir(), ".okx", "bin");
+/**
+ * Directory under the user's home where the binary lives.
+ * Resolved per call (not at import) so HOME changes in tests are honored.
+ */
+function authBinDir(): string {
+  return join(homeDir(), ".okx", "bin");
+}
 
 /**
  * Return the expected path to the okx-auth binary.
@@ -20,7 +25,7 @@ export function getAuthBinaryPath(): string {
     return process.env.OKX_AUTH_BIN;
   }
   const ext = process.platform === "win32" ? ".exe" : "";
-  return join(AUTH_BIN_DIR, `okx-auth${ext}`);
+  return join(authBinDir(), `okx-auth${ext}`);
 }
 
 /**
@@ -44,8 +49,9 @@ export function execAuthToken(): Promise<string> {
 
 /** Unix token delivery via fd 3. */
 function execAuthTokenUnix(binPath: string): Promise<string> {
+  const target = authSpawnTarget(binPath, ["token"]);
   return new Promise((resolve, reject) => {
-    const child = spawn(binPath, ["token"], {
+    const child = spawn(target.command, target.args, {
       stdio: ["ignore", "ignore", "inherit", "pipe"],
       //       stdin    stdout    stderr     fd3 (pipe)
     });
@@ -73,11 +79,11 @@ function execAuthTokenUnix(binPath: string): Promise<string> {
  *          timeout, non-zero exit, malformed output).
  */
 export function execAuthStatus(): Promise<AuthStatusResult | null> {
-  const binPath = getAuthBinaryPath();
+  const target = authSpawnTarget(getAuthBinaryPath(), ["status", "--json"]);
   return new Promise((resolve) => {
     execFile(
-      binPath,
-      ["status", "--json"],
+      target.command,
+      target.args,
       { timeout: EXEC_TIMEOUT_MS, encoding: "utf-8" },
       (error, stdout) => {
         if (error) {
