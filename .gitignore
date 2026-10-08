@@ -2,9 +2,21 @@ node_modules/
 dist/
 coverage/
 *.tsbuildinfo
+# --- Secrets & credentials (never commit real keys) ---
 .env
-.env.local
-.env.bak
+.env.*
+!.env.example
+config.toml
+.okx/
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+credentials.json
+secrets.json
+*.log
 npm-debug.log*
 _tmp_*
 .cursor/
