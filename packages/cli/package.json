@@ -6,7 +6,8 @@
   "license": "MIT",
   "main": "dist/index.js",
   "bin": {
-    "okx": "dist/index.js"
+    "okx": "dist/index.js",
+    "okx-tui": "dist/tui.js"
   },
   "files": [
     "dist",
