@@ -6,17 +6,18 @@ reference when restyling the terminal theme.
 
 | File | Screen |
 | --- | --- |
-| `01-dashboard-simple.png` | Default simplified home view for everyday use |
-| `02-dashboard-advanced.png` | Advanced menu behind the `A` toggle |
-| `03-trading-operations-menu.png` | `Trading & funds operations` submenu |
+| `01-control-room.png` | Multi-pane control room: header with mode/profile/API status, grouped sidebar, home pane, configuration inspector, CLI log pane, and ticker status bar |
+| `02-bot-wizard.png` | Create-bot wizard at the deploy step: preview text, `CONFIRM DEMO …` prompt, live inspector summary, and validation checklist |
+| `03-mutation-menu.png` | Trading operations submenu (orders, transfers, bots, Earn, events) |
 | `04-order-preview-confirmation.png` | Order flow with instrument pick list, TP/SL prompts, and the exact `CONFIRM DEMO …` preview |
 | `05-bot-monitor-menu.png` | Grid/DCA bot monitoring submenu |
 | `06-installed-skills.png` | Installed-skills view (`~/.agents/skills` scan + registry) |
+| `07-compact-dashboard.png` | Compact single-box fallback used on terminals smaller than 110×35 |
 
 ## Regenerating
 
 Run the generator from the repository root — it writes terminal-styled HTML to
-`html/` next to this file; screenshot each page at ~960×720 to produce the PNGs:
+`html/` next to this file; screenshot each page to produce the PNGs:
 
 ```bash
 pnpm --filter @okx_ai/okx-trade-cli exec tsx ../../docs/theming/examples/generate.mjs
