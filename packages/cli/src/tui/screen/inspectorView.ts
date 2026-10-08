@@ -60,7 +60,9 @@ export function renderInspectorLines(model: InspectorModel, width: number): stri
   for (const field of model.fields) {
     lines.push(summaryRow(field.label, field.value, width));
   }
-  lines.push("", `${GRAY}VALIDATION CHECKS${RESET}   ${counterColor}${passed}/${model.checks.length} passed${RESET}`);
+  const counter = `${passed}/${model.checks.length} passed`;
+  const header = width >= 30 ? `VALIDATION CHECKS` : `VALIDATION`;
+  lines.push("", `${GRAY}${header}${RESET}   ${counterColor}${counter}${RESET}`);
   for (const check of model.checks) {
     const glyph = check.status === "pass" ? `${GREEN}✓${RESET}` : check.status === "fail" ? `${RED}✗${RESET}` : `${GRAY}•${RESET}`;
     const left = `${glyph} ${WHITE}${ansiSlice(check.label, Math.max(6, width - 10))}${RESET}`;

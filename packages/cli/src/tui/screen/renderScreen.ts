@@ -21,9 +21,9 @@ import { buildNavItems } from "./sidebarModel.js";
 import { renderSidebarLines } from "./sidebarView.js";
 import { renderStatusBar } from "./statusBar.js";
 
-/** Minimum terminal size required for the multi-pane layout. */
+/** Minimum terminal size required for the multi-pane layout; 120×30 covers the default Windows console. */
 export const PANE_MIN_COLUMNS = 110;
-export const PANE_MIN_ROWS = 35;
+export const PANE_MIN_ROWS = 26;
 
 /** Everything the frame needs for one full render. */
 export interface ScreenContext {
@@ -53,7 +53,8 @@ export interface ScreenContext {
  * ERRORS:
  * - Throws when the terminal is smaller than the pane minimum; callers must gate with usePaneLayout().
  * - RULES:
- * - Layout: header(2) + body(sidebar | main | right column) + log(4-9 flex) + status(2); every pane line is width-exact.
+ * - Layout: header(2) + body(sidebar | main | right column) + log(4-8 flex) + status(2); every pane line is width-exact.
+ * - Below 140 columns the side panes narrow; below ~30 rows the sidebar drops step echoes and the main view drops decorations.
  */
 export function renderScreen(ctx: ScreenContext): string {
   const width = ctx.columns;
@@ -61,19 +62,20 @@ export function renderScreen(ctx: ScreenContext): string {
     throw new Error("pane layout requires a larger terminal");
   }
 
-  const sidebarWidth = 26;
-  const rightWidth = 32;
+  const narrow = width < 140;
+  const sidebarWidth = narrow ? 22 : 26;
+  const rightWidth = narrow ? 28 : 32;
   const mainWidth = width - sidebarWidth - rightWidth;
   const headerHeight = 2;
   const statusHeight = 2;
-  const logHeight = Math.max(5, Math.min(8, Math.floor(ctx.rows * 0.18)));
+  const logHeight = Math.max(4, Math.min(8, Math.floor(ctx.rows * 0.16)));
   const bodyHeight = ctx.rows - headerHeight - logHeight - statusHeight;
 
   const header = renderHeaderBar(ctx.state, width);
   const sidebar = boxPane({
     width: sidebarWidth,
     height: bodyHeight,
-    lines: renderSidebarLines(buildNavItems(), sidebarWidth - 2, ctx.wizardStep),
+    lines: renderSidebarLines(buildNavItems(), sidebarWidth - 2, ctx.wizardStep, bodyHeight - 2),
   });
 
   const main = boxPane({
@@ -86,12 +88,13 @@ export function renderScreen(ctx: ScreenContext): string {
       hint: ctx.wizardHint,
       intentText: ctx.intentText,
       width: mainWidth - 4,
+      height: bodyHeight - 2,
     }),
   });
 
-  const shortcutsHeight = 7;
-  const examplesHeight = Math.max(5, Math.min(9, Math.floor(bodyHeight * 0.26)));
-  const inspectorHeight = Math.max(10, bodyHeight - shortcutsHeight - examplesHeight);
+  const shortcutsHeight = bodyHeight >= 26 ? 7 : 5;
+  const examplesHeight = Math.max(4, Math.min(9, Math.floor(bodyHeight * 0.24)));
+  const inspectorHeight = Math.max(8, bodyHeight - shortcutsHeight - examplesHeight);
   const inspector = boxPane({
     width: rightWidth,
     height: inspectorHeight,

@@ -35,6 +35,7 @@ const EXAMPLE_CHIPS = [
  * - options.hint: string | undefined — the current prompt hint drawn inside the input box
  * - options.intentText: string | undefined — the raw intent the user typed on step 1
  * - options.width: number — printable width of the main pane content area
+ * - options.height: number | undefined — available content rows; a tighter height drops subtitle/chips first
  * OUTPUT:
  * - string[] — styled content lines for the main pane
  * USES:
@@ -45,6 +46,7 @@ const EXAMPLE_CHIPS = [
  * - none
  * RULES:
  * - The hint line is informational: actual user typing happens on the bottom prompt line below the frame.
+ * - The Deploy button row is always kept: overflow trims decorative lines, never the form or actions.
  */
 export function renderCreateBotView(options: {
   draft: TuiWizardDraft | undefined;
@@ -53,8 +55,9 @@ export function renderCreateBotView(options: {
   hint?: string;
   intentText?: string;
   width: number;
+  height?: number;
 }): string[] {
-  const { draft, state, step, hint, intentText, width } = options;
+  const { draft, state, step, hint, intentText, width, height } = options;
   const inner = Math.max(20, width);
   const chipBudget = Math.max(0, inner - 12);
   const keptChips: string[] = [];
@@ -71,6 +74,12 @@ export function renderCreateBotView(options: {
     inner - 4,
   );
 
+  const form = renderWizardForm(draft, state, inner);
+  const stepper = renderStepper(STEPS, step, inner);
+  const strategyHeader = `${WHITE}Strategy configuration${RESET}   ${DIM}Adjust the parameters generated from your request.${RESET}`;
+  const strategyPills = renderPillRow(["Auto (AI)", "Manual", "Advanced"], 0);
+  const buttons = `${DIM}⟳ Backtest${RESET}   ${step === 5 ? `${GREEN_BG}${BLACK} Save & Deploy → ${RESET}` : `${DIM} Save & Deploy → ${RESET}`}`;
+
   const lines: string[] = [
     `${BOLD}${WHITE}Create a new bot${RESET}`,
     `${DIM}Describe your trading idea in natural language, or configure manually.${RESET}`,
@@ -79,14 +88,26 @@ export function renderCreateBotView(options: {
     `${DIM}│${RESET}${inputBody}${DIM}│${RESET}`,
     `${DIM}└${"─".repeat(inner - 2)}┘${RESET}`,
     "",
-    renderStepper(STEPS, step, inner),
+    stepper,
     "",
-    `${WHITE}Strategy configuration${RESET}   ${DIM}Adjust the parameters generated from your request.${RESET}`,
-    renderPillRow(["Auto (AI)", "Manual", "Advanced"], 0),
+    strategyHeader,
+    strategyPills,
     "",
-    ...renderWizardForm(draft, state, inner),
+    ...form,
     "",
-    `${DIM}⟳ Backtest${RESET}   ${step === 5 ? `${GREEN_BG}${BLACK} Save & Deploy → ${RESET}` : `${DIM} Save & Deploy → ${RESET}`}`,
+    buttons,
   ];
-  return lines;
+  if (height === undefined || lines.length <= height) return lines;
+  const dense: string[] = [
+    `${BOLD}${WHITE}Create a new bot${RESET}`,
+    `${DIM}┌${"─".repeat(inner - 2)}┐${RESET}`,
+    `${DIM}│${RESET}${inputBody}${DIM}│${RESET}`,
+    `${DIM}└${"─".repeat(inner - 2)}┘${RESET}`,
+    stepper,
+    strategyPills,
+    ...form,
+    buttons,
+  ];
+  if (dense.length <= height) return dense;
+  return [...dense.slice(0, Math.max(0, height - 1)), buttons];
 }
