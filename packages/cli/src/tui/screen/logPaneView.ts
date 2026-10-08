@@ -1,14 +1,17 @@
 /**
  * FILE: logPaneView.ts
- * PURPOSE: Render the bottom CLI/API log pane from the bounded session log.
+ * PURPOSE: Render the bottom log pane: tab strip (CLI Logs active) plus timestamped captured output.
  * LAYER: component
  * DEPENDS_ON: ../types.js, ./boxPane.js, ./palette.js
  * RULES:
- * - Entries are rendered newest-last; each row is truncated by the pane itself.
+ * - Entries are rendered newest-last; the extra tabs are visual anchors matching the target and stay dim.
  */
 import type { TuiLogEntry } from "../types.js";
 import { boxPane } from "./boxPane.js";
-import { CYAN, DIM, GRAY, GREEN, RED, RESET, YELLOW } from "./palette.js";
+import { CYAN, DIM, GRAY, GREEN, RED, RESET, WHITE, YELLOW } from "./palette.js";
+
+/** Tab labels mirroring the target log pane; only the first is active (session log). */
+const LOG_TABS = ["CLI Logs", "Backtest", "Order Preview", "API Response"];
 
 /**
  * PURPOSE: Produce the bordered log pane lines for the lower screen region.
@@ -25,16 +28,19 @@ import { CYAN, DIM, GRAY, GREEN, RED, RESET, YELLOW } from "./palette.js";
  * ERRORS:
  * - Propagates boxPane's width error when width < 4.
  * RULES:
- * - Level colors: info cyan, warn yellow, error red; the pane title doubles as a hint for the fullscreen view.
+ * - Level colors: info cyan, warn yellow, error red; one content row is reserved for the tab strip.
  */
 export function renderLogPane(entries: TuiLogEntry[], width: number, height: number): string[] {
   const inner = Math.max(0, height - 2);
-  const visible = entries.slice(Math.max(0, entries.length - inner));
-  const lines = visible.map((entry) => {
+  const tabRow = LOG_TABS.map((tab, index) => (index === 0 ? `${WHITE}${tab}${RESET}` : `${DIM}${tab}${RESET}`)).join(`${DIM}  │  ${RESET}`);
+  const visibleRows = Math.max(0, inner - 1);
+  const visible = entries.slice(Math.max(0, entries.length - visibleRows));
+  const lines: string[] = [tabRow];
+  for (const entry of visible) {
     const color = entry.level === "error" ? RED : entry.level === "warn" ? YELLOW : CYAN;
-    const tag = entry.level.toUpperCase().padEnd(5);
-    return `${GRAY}${entry.time}${RESET} ${color}${tag}${RESET} ${entry.text}`;
-  });
-  while (lines.length < inner) lines.push(`${DIM}${GREEN}·${RESET}${DIM}${""}${RESET}`);
-  return boxPane({ width, height, title: "CLI Logs — L for fullscreen", lines });
+    const tag = entry.level === "error" ? "ERR" : entry.level === "warn" ? "WARN" : "INFO";
+    lines.push(`${GRAY}${entry.time}${RESET}  ${color}${tag}${RESET}  ${entry.text}`);
+  }
+  while (lines.length < inner) lines.push(`${DIM}·${RESET}`);
+  return boxPane({ width, height, lines });
 }

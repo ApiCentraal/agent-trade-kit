@@ -1,6 +1,6 @@
 /**
  * FILE: headerBar.ts
- * PURPOSE: Render the top identity bar with product name, zone tabs, mode badge, profile, and API status.
+ * PURPOSE: Render the top identity bar: brand, zone tabs, DEMO/LIVE segmented mode, profile, and API status.
  * LAYER: component
  * DEPENDS_ON: ../types.js, ./ansiPadEnd.js, ./ansiSlice.js, ./ansiWidth.js, ./palette.js
  * RULES:
@@ -10,10 +10,16 @@ import type { TuiDashboardState } from "../types.js";
 import { ansiPadEnd } from "./ansiPadEnd.js";
 import { ansiSlice } from "./ansiSlice.js";
 import { ansiWidth } from "./ansiWidth.js";
-import { BOLD, CYAN, DIM, GRAY, GREEN, RED, RESET, YELLOW } from "./palette.js";
+import { BLACK, BOLD, CYAN, DIM, GRAY, GREEN, GREEN_BG, RED_BG, RESET, WHITE, YELLOW } from "./palette.js";
 
-/** Top navigation zones mirroring the target control-room layout. */
-const ZONES = ["Bots", "Markets", "Account", "Developer", "Docs"];
+/** Top navigation zones; caret marks a dropdown affordance like the target header. */
+const ZONES: Array<{ label: string; caret: boolean }> = [
+  { label: "Bots", caret: false },
+  { label: "Markets", caret: true },
+  { label: "Account", caret: true },
+  { label: "Developer", caret: true },
+  { label: "Docs", caret: true },
+];
 
 /** Control-character class kept as a literal so source files never embed raw control bytes. */
 const CONTROL_CHARS = new RegExp("\\p{Cc}", "gu");
@@ -38,7 +44,7 @@ function sanitizeText(text: string): string {
 }
 
 /**
- * PURPOSE: Build the two-line header: brand + zone tabs, then a dim divider.
+ * PURPOSE: Build the two-line header: brand + segmented DEMO/LIVE + zone tabs + profile + API status.
  * INPUT:
  * - state: TuiDashboardState — safe profile, mode, and credential readiness
  * - width: number — total printable width of the header line
@@ -51,18 +57,21 @@ function sanitizeText(text: string): string {
  * ERRORS:
  * - none
  * RULES:
- * - Mode colors: DEMO green, LIVE red, NOT CONFIGURED yellow; secrets are never displayed.
+ * - The active mode segment is filled (green for DEMO, red for LIVE); secrets are never displayed.
  */
 export function renderHeaderBar(state: TuiDashboardState, width: number): string[] {
   const profile = ansiSlice(sanitizeText(state.activeProfile), 16);
-  const modeColor = state.mode === "LIVE" ? RED : state.mode === "DEMO" ? GREEN : YELLOW;
-  const apiBadge = state.credentialsReady ? `${GREEN}API Connected${RESET}` : `${YELLOW}No credentials${RESET}`;
-  const brand = `${BOLD}${CYAN}◆ OKX${RESET}  ${BOLD}Agent Trade Kit${RESET} ${DIM}v${state.version}${RESET}`;
-  const tabs = ZONES.map((zone, index) =>
-    index === 0 ? `${CYAN}${zone}${RESET}` : `${GRAY}${zone}${RESET}`,
-  ).join(`${DIM}  ·  ${RESET}`);
-  const left = `${brand}   ${DIM}|${RESET}   ${tabs}`;
-  const right = `${modeColor}${BOLD}${state.mode}${RESET}  ${GRAY}Profile:${RESET} ${profile}  ${apiBadge}`;
+  const demoSeg = state.mode === "DEMO" ? `${GREEN_BG}${BLACK} DEMO ${RESET}` : `${DIM} DEMO ${RESET}`;
+  const liveSeg = state.mode === "LIVE" ? `${RED_BG}${WHITE} LIVE ${RESET}` : `${DIM} LIVE ${RESET}`;
+  const modeSeg = state.mode === "NOT CONFIGURED" ? `${YELLOW} NOT CONFIGURED ${RESET}` : `${demoSeg}${liveSeg}`;
+  const apiBadge = state.credentialsReady ? `${GREEN}● API Connected${RESET}` : `${YELLOW}● No credentials${RESET}`;
+  const brand = `${BOLD}${CYAN}◆ OKX${RESET}  ${BOLD}Bot Config CLI${RESET} ${CYAN} BETA ${RESET}`;
+  const tabs = ZONES.map((zone, index) => {
+    const label = zone.caret ? `${zone.label} ▾` : zone.label;
+    return index === 0 ? `${WHITE}${label}${RESET}` : `${GRAY}${label}${RESET}`;
+  }).join("   ");
+  const left = `${brand}  ${DIM}│${RESET}  ${tabs}`;
+  const right = `${modeSeg}  ${GRAY}Profile:${RESET} ${profile}  ${apiBadge}  ${DIM}Spot${RESET}`;
   const pad = Math.max(1, width - ansiWidth(left) - ansiWidth(right));
   return [ansiPadEnd(`${left}${" ".repeat(pad)}${right}`, width), `${DIM}${"─".repeat(width)}${RESET}`];
 }

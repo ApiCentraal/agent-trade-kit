@@ -12,27 +12,31 @@ import type { TuiNavItem } from "../types.js";
 const NAV_SECTIONS: Array<{ section: string; items: Array<{ key: string; label: string }> }> = [
   {
     section: "Bot configuration",
+    items: [{ key: "w", label: "Create bot" }],
+  },
+  {
+    section: "Bots",
     items: [
-      { key: "w", label: "Create bot wizard" },
-      { key: "1", label: "My bots & preview" },
+      { key: "1", label: "My bots" },
       { key: "2", label: "Bot operations" },
+      { key: "h", label: "Marketplace" },
     ],
   },
   {
     section: "Markets",
     items: [
       { key: "4", label: "Market data" },
-      { key: "5", label: "Analytics & indicators" },
+      { key: "5", label: "Analytics" },
       { key: "6", label: "Event contracts" },
     ],
   },
   {
     section: "Account",
     items: [
-      { key: "7", label: "Overview & limits" },
-      { key: "8", label: "Positions & activity" },
-      { key: "9", label: "Trading operations" },
-      { key: "0", label: "Earn operations" },
+      { key: "7", label: "Overview" },
+      { key: "8", label: "Positions" },
+      { key: "9", label: "Trading ops" },
+      { key: "0", label: "Earn ops" },
     ],
   },
   {
@@ -46,14 +50,16 @@ const NAV_SECTIONS: Array<{ section: string; items: Array<{ key: string; label: 
   {
     section: "Tools",
     items: [
-      { key: "c", label: "Profiles & API keys" },
+      { key: "c", label: "Profiles & keys" },
       { key: "e", label: "MCP clients" },
       { key: "f", label: "Authentication" },
       { key: "g", label: "Health & updates" },
-      { key: "h", label: "Skills marketplace" },
     ],
   },
 ];
+
+/** Wizard step labels echoed under "Bot configuration" like the target's numbered sub-steps. */
+export const SIDEBAR_WIZARD_STEPS = ["Intent", "Strategy", "Market", "Risk", "Preview", "Deploy"];
 
 /**
  * PURPOSE: Flatten the grouped navigation definition into ordered items for rendering and dispatch.
