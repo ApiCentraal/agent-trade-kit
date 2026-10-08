@@ -6,13 +6,13 @@ reference when restyling the terminal theme.
 
 | File | Screen |
 | --- | --- |
-| `01-control-room.png` | Multi-pane control room: header with mode/profile/API status, grouped sidebar, home pane, configuration inspector, CLI log pane, and ticker status bar |
+| `01-control-room.png` | Multi-pane control room: header with mode/profile/API status, grouped sidebar with wizard-step echo, create-bot form, configuration inspector, CLI log pane, and ticker status bar |
 | `02-bot-wizard.png` | Create-bot wizard at the deploy step: preview text, `CONFIRM DEMO …` prompt, live inspector summary, and validation checklist |
 | `03-mutation-menu.png` | Trading operations submenu (orders, transfers, bots, Earn, events) |
 | `04-order-preview-confirmation.png` | Order flow with instrument pick list, TP/SL prompts, and the exact `CONFIRM DEMO …` preview |
 | `05-bot-monitor-menu.png` | Grid/DCA bot monitoring submenu |
 | `06-installed-skills.png` | Installed-skills view (`~/.agents/skills` scan + registry) |
-| `07-compact-dashboard.png` | Compact single-box fallback used on terminals smaller than 110×35 |
+| `07-compact-dashboard.png` | Compact single-box fallback used on terminals smaller than 110×26 |
 
 ## Regenerating
 
