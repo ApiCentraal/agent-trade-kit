@@ -39,6 +39,8 @@ export interface ScreenContext {
   clock: string;
   columns: number;
   rows: number;
+  /** Sidebar key of the most recently dispatched flow; rendered as a ▸ marker for session overview. */
+  activeKey?: string;
 }
 
 /**
@@ -75,9 +77,9 @@ export function renderScreen(ctx: ScreenContext): string {
   // Grant the sidebar one extra row when that flips it into the wizard-echo tier: the step
   // mirror under "Create bot" is part of the target layout and worth one log line.
   const navItems = buildNavItems();
-  let sidebarLines = renderSidebarLines(navItems, sidebarWidth - 2, ctx.wizardStep, bodyHeight - 2);
+  let sidebarLines = renderSidebarLines(navItems, sidebarWidth - 2, ctx.wizardStep, bodyHeight - 2, ctx.activeKey);
   if (logHeight > 4) {
-    const taller = renderSidebarLines(navItems, sidebarWidth - 2, ctx.wizardStep, bodyHeight - 1);
+    const taller = renderSidebarLines(navItems, sidebarWidth - 2, ctx.wizardStep, bodyHeight - 1, ctx.activeKey);
     if (taller.length > sidebarLines.length && taller.length <= bodyHeight - 1) {
       logHeight -= 1;
       bodyHeight += 1;

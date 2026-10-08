@@ -37,11 +37,30 @@ const EXAMPLE_COMMANDS = [
  * RULES:
  * - Rows are truncated to width; the list is static so it never leaks session data.
  * - The "Use" badge is omitted when the command itself needs nearly the full row, so text never clips mid-token.
+ * - Contextual commands (wizard-derived) wrap over multiple rows with an indent, because seeing the
+ *   full invocation that will run is the point of the panel; static examples never wrap.
  */
 export function renderExampleCommandsLines(width: number, maxRows: number, commands?: string[]): string[] {
   const lines: string[] = [];
-  const list = commands && commands.length > 0 ? commands : EXAMPLE_COMMANDS;
-  for (const command of list.slice(0, maxRows)) {
+  if (commands && commands.length > 0) {
+    for (const command of commands.slice(0, maxRows)) {
+      let rest = command;
+      while (rest.length > 0 && lines.length < maxRows) {
+        const continuation = lines.length > 0;
+        const capacity = continuation ? width - 2 : width;
+        let cut = rest.length <= capacity ? rest.length : rest.lastIndexOf(" ", capacity);
+        if (cut <= 0) cut = Math.min(capacity, rest.length);
+        const chunk = continuation ? `  ${rest.slice(0, cut).trimStart()}` : rest.slice(0, cut);
+        lines.push(ansiPadEnd(`${WHITE}${chunk}${RESET}`, width));
+        rest = rest.slice(cut).trimStart();
+      }
+    }
+    if (lines.length < maxRows) {
+      lines.push(`${DIM}runs only after exact CONFIRM${RESET}`);
+    }
+    return lines.slice(0, maxRows);
+  }
+  for (const command of EXAMPLE_COMMANDS.slice(0, maxRows)) {
     const fitsBadge = command.length + 5 <= width;
     const text = fitsBadge
       ? `${WHITE}${command}${RESET}`

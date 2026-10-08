@@ -20,6 +20,8 @@ import { SIDEBAR_WIZARD_STEPS } from "./sidebarModel.js";
  * - items: TuiNavItem[] — ordered navigation entries from buildNavItems
  * - innerWidth: number — printable width inside the sidebar pane
  * - wizardStep: number — active wizard step (0–5) or -1 when idle; echoes as ✓/numbered rows
+ * - maxLines: number | undefined — content rows available; density degrades through four tiers
+ * - activeKey: string | undefined — key of the last dispatched item; renders with a ▸ marker
  * OUTPUT:
  * - string[] — styled lines ready to be placed inside the sidebar pane
  * USES:
@@ -38,6 +40,7 @@ export function renderSidebarLines(
   innerWidth: number,
   wizardStep: number,
   maxLines?: number,
+  activeKey?: string,
 ): string[] {
   const tiers: Array<{ echoes: boolean; separators: boolean; headers: boolean }> = [
     { echoes: true, separators: true, headers: true },
@@ -46,10 +49,10 @@ export function renderSidebarLines(
     { echoes: false, separators: false, headers: false },
   ];
   for (const tier of tiers) {
-    const lines = buildLines(items, innerWidth, wizardStep, tier);
+    const lines = buildLines(items, innerWidth, wizardStep, tier, activeKey);
     if (maxLines === undefined || lines.length <= maxLines) return lines;
   }
-  return buildLines(items, innerWidth, wizardStep, tiers[tiers.length - 1]).slice(0, maxLines);
+  return buildLines(items, innerWidth, wizardStep, tiers[tiers.length - 1], activeKey).slice(0, maxLines);
 }
 
 /**
@@ -77,6 +80,7 @@ function buildLines(
   innerWidth: number,
   wizardStep: number,
   density: { echoes: boolean; separators: boolean; headers: boolean },
+  activeKey?: string,
 ): string[] {
   const lines: string[] = [];
   let lastSection = "";
@@ -100,9 +104,10 @@ function buildLines(
       continue;
     }
     const badge = `${DIM}[${item.key}]${RESET}`;
-    const label = `${WHITE}${ansiSlice(item.label, Math.max(4, innerWidth - 5))}${RESET}`;
+    const active = item.key === activeKey;
+    const label = `${active ? CYAN : WHITE}${ansiSlice(item.label, Math.max(4, innerWidth - 5))}${RESET}`;
     const pad = Math.max(1, innerWidth - ansiWidth(label) - 4);
-    lines.push(` ${label}${" ".repeat(pad)}${badge}`);
+    lines.push(`${active ? `${CYAN}▸${RESET}` : " "}${label}${" ".repeat(pad)}${badge}`);
   }
   lines.push(` ${DIM}Quit${" ".repeat(Math.max(1, innerWidth - 9))}[q]${RESET}`);
   return lines;

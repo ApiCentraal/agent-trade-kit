@@ -114,6 +114,7 @@ async function launchPaneDashboard(): Promise<void> {
   const log = new SessionLog();
   let tickers: string[] = [];
   let latencyMs: number | undefined;
+  let activeKey: string | undefined;
   let input = createInterface({ input: process.stdin, output: process.stdout });
   process.stdout.write("\u001b[?25l");
 
@@ -133,6 +134,7 @@ async function launchPaneDashboard(): Promise<void> {
         clock: new Date().toTimeString().slice(0, 8),
         columns: process.stdout.columns ?? 120,
         rows: process.stdout.rows ?? 40,
+        activeKey,
       }),
     );
   };
@@ -173,6 +175,7 @@ async function launchPaneDashboard(): Promise<void> {
         if (choice) log.add("warn", `no action for key "${choice}"`);
         continue;
       }
+      activeKey = choice === "w" || raw.length > 2 ? "w" : choice;
 
       if (isInteractiveArgs(args)) {
         input.close();
