@@ -91,7 +91,7 @@ export function renderDashboard(state: TuiDashboardState, advanced = false): str
   }
 
   screen += `├${border}┤\n`;
-  const safetyNote = "  Financial actions show a preview and require exact demo/live confirmation.";
+  const safetyNote = "  Financial actions preview first and need an exact confirmation.";
   screen += `│${safetyNote.slice(0, width).padEnd(width)}│\n`;
   const exitHint = advanced ? "  Select 1–5, B to go back, or Q to exit." : "  Select 1–6, A for more tools, or Q to exit.";
   screen += `│${exitHint.padEnd(width)}│\n`;
