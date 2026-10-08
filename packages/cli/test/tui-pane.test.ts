@@ -13,6 +13,9 @@ import { ansiWidth } from "../src/tui/screen/ansiWidth.ts";
 import { ansiPadEnd } from "../src/tui/screen/ansiPadEnd.ts";
 import { ansiSlice } from "../src/tui/screen/ansiSlice.ts";
 import { boxPane } from "../src/tui/screen/boxPane.ts";
+import { renderPillRow } from "../src/tui/screen/widgets/pillRow.ts";
+import { renderStepper } from "../src/tui/screen/widgets/stepper.ts";
+import { renderWizardForm } from "../src/tui/screen/wizardFormView.ts";
 import { renderScreen, PANE_MIN_COLUMNS, PANE_MIN_ROWS } from "../src/tui/screen/renderScreen.ts";
 import { buildNavItems } from "../src/tui/screen/sidebarModel.ts";
 import { buildInspectorModel } from "../src/tui/screen/inspectorModel.ts";
@@ -63,29 +66,70 @@ test("sidebar nav keys are unique and dispatch maps every key", async () => {
   assert.ok(keys.includes("w") && keys.includes("h"));
 });
 
-test("renderScreen composes panes at minimum size and rejects smaller terminals", () => {
+const CTX = {
+  state: STATE,
+  logEntries: [] as { time: string; level: "info"; text: string }[],
+  wizardDraft: undefined,
+  wizardStep: -1,
+  wizardHint: undefined,
+  intentText: undefined,
+  tickers: [] as string[],
+  latencyMs: undefined,
+  clock: "14:42:18",
+};
+
+test("renderScreen composes the control-room panes and rejects smaller terminals", () => {
   const screen = renderScreen({
-    state: STATE,
+    ...CTX,
     logEntries: [{ time: "00:00:00", level: "info", text: "ready" }],
-    wizardDraft: undefined,
-    mainLines: undefined,
-    mainTitle: undefined,
-    tickers: [],
-    lastRefresh: undefined,
     columns: 140,
-    rows: 36,
+    rows: 40,
   });
   const plain = stripAnsi(screen);
   assert.ok(plain.includes("BOT CONFIGURATION"));
+  assert.ok(plain.includes("Create a new bot"));
   assert.ok(plain.includes("CLI Logs"));
+  assert.ok(plain.includes("Backtest"));
+  assert.ok(plain.includes("Generated configuration"));
+  assert.ok(plain.includes("Example commands"));
+  assert.ok(plain.includes("Keyboard shortcuts"));
   assert.ok(plain.includes("DEMO"));
   assert.ok(plain.includes("API Connected"));
+  assert.ok(plain.includes("Latency"));
   assert.throws(() =>
-    renderScreen({
-      state: STATE, logEntries: [], wizardDraft: undefined, mainLines: undefined, mainTitle: undefined,
-      tickers: [], lastRefresh: undefined, columns: PANE_MIN_COLUMNS - 10, rows: PANE_MIN_ROWS,
-    }),
+    renderScreen({ ...CTX, columns: PANE_MIN_COLUMNS - 10, rows: PANE_MIN_ROWS }),
   );
+});
+
+test("pill rows highlight only the active option", () => {
+  const row = renderPillRow(["Low", "Medium", "High"], 1);
+  const plain = stripAnsi(row);
+  assert.ok(plain.includes("Medium"));
+  assert.ok(row.includes("\u001b[42m"), "active pill uses the filled green background");
+  assert.equal(renderPillRow(["A", "B"], -1).includes("\u001b[42m"), false);
+});
+
+test("stepper shows done, current, and pending step states", () => {
+  const line = renderStepper(["Intent", "Strategy", "Market"], 1, 60);
+  const plain = stripAnsi(line);
+  assert.ok(plain.includes("✓1 Intent"), "finished steps carry a checkmark");
+  assert.ok(plain.includes("2 Strategy"));
+  assert.ok(plain.includes("3 Market"));
+});
+
+test("wizard form renders numbered sections and environment pills from state", () => {
+  const lines = renderWizardForm(
+    { botType: "grid", instId: "BTC-USDT", market: "spot", amount: "100", gridNum: "20", risk: "low" },
+    STATE,
+    100,
+  );
+  const plain = lines.map(stripAnsi).join("\n");
+  assert.ok(plain.includes("1. Bot type"));
+  assert.ok(plain.includes("4. Grid parameters"));
+  assert.ok(plain.includes("7. Environment"));
+  assert.ok(plain.includes("BTC/USDT"));
+  assert.ok(plain.includes("Run in"));
+  assert.ok(plain.includes("Demo"));
 });
 
 test("inspector flags missing credentials and summarizes a wizard draft", () => {
