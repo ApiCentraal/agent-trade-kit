@@ -73,7 +73,7 @@ async function testDashboardSummaryAndGuardedRoutes(): Promise<void> {
   assert.match(advancedScreen, /Tools & skills/);
   assert.match(advancedScreen, /Authentication/);
   assert.match(advancedScreen, /Back to simple menu/);
-  assert.match(screen, /Financial actions show a preview/);
+  assert.match(screen, /Financial actions preview first/);
   assert.doesNotMatch(screen, /api_key|secret_key|passphrase/i);
 
   const accountSource = new PassThrough();
