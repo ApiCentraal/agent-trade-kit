@@ -19,3 +19,13 @@ export const YELLOW = "\u001b[93m";
 export const RED = "\u001b[91m";
 /** Muted gray used for secondary labels and inactive items. */
 export const GRAY = "\u001b[90m";
+/** Bright white used for emphasized values inside the configuration form. */
+export const WHITE = "\u001b[97m";
+/** Black foreground paired with GREEN_BG for filled active pills and buttons. */
+export const BLACK = "\u001b[30m";
+/** Green background used for filled pills, toggles, and the deploy button. */
+export const GREEN_BG = "\u001b[42m";
+/** Red background used for the LIVE segment of the mode switch. */
+export const RED_BG = "\u001b[41m";
+/** Inverse video used for the focused sidebar row. */
+export const INVERSE = "\u001b[7m";
