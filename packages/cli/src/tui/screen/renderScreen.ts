@@ -15,12 +15,13 @@ import { renderHeaderBar } from "./headerBar.js";
 import { buildInspectorModel } from "./inspectorModel.js";
 import { renderInspectorLines } from "./inspectorView.js";
 import { renderCreateBotView } from "./createBotView.js";
-import { renderExampleCommandsLines } from "./exampleCommandsView.js";
+import { renderExampleCommandsLines, type ExamplePanelState } from "./exampleCommandsView.js";
 import { renderShortcutsLines } from "./shortcutsView.js";
 import { renderLogPane } from "./logPaneView.js";
 import { buildNavItems } from "./sidebarModel.js";
 import { renderSidebarLines } from "./sidebarView.js";
 import { renderStatusBar } from "./statusBar.js";
+import { sanitizeTerminalText } from "./sanitizeTerminalText.js";
 
 /** Minimum terminal size required for the multi-pane layout; 120×30 covers the default Windows console. */
 export const PANE_MIN_COLUMNS = 110;
@@ -46,18 +47,19 @@ export interface ScreenContext {
 /**
  * PURPOSE: Render the complete dashboard screen for the current terminal size.
  * INPUT:
- * - ctx: ScreenContext — dashboard state, log tail, wizard draft/step/hint, tickers, latency, clock, terminal size
+ * - ctx: ScreenContext — dashboard state, log tail, wizard draft/step/hint, tickers, latency, clock, terminal size and active nav key
  * OUTPUT:
  * - string — the complete ANSI screen ready for a full redraw
  * USES:
- * - renderHeaderBar, renderSidebarLines, renderCreateBotView, buildInspectorModel, renderInspectorLines, renderExampleCommandsLines, renderShortcutsLines, renderLogPane, renderStatusBar, boxPane
+ * - buildWizardArgs, sanitizeTerminalText, renderHeaderBar, renderSidebarLines, renderCreateBotView, buildInspectorModel, renderInspectorLines, renderExampleCommandsLines, renderShortcutsLines, renderLogPane, renderStatusBar, boxPane
  * EFFECT:
  * - none
  * ERRORS:
  * - Throws when the terminal is smaller than the pane minimum; callers must gate with usePaneLayout().
- * - RULES:
+ * RULES:
  * - Layout: header(2) + body(sidebar | main | right column) + log(4-8 flex) + status(2); every pane line is width-exact.
- * - Below 140 columns the side panes narrow; below ~30 rows the sidebar drops step echoes and the main view drops decorations.
+ * - An active wizard reserves a 4-row log and grows its command-preview panel; below ~30 rows the sidebar and main view drop decorations first.
+ * - The command preview is display-only and includes the same mode/profile flags and exact confirmation required by the wizard.
  */
 export function renderScreen(ctx: ScreenContext): string {
   const width = ctx.columns;
@@ -71,7 +73,7 @@ export function renderScreen(ctx: ScreenContext): string {
   const mainWidth = width - sidebarWidth - rightWidth;
   const headerHeight = 2;
   const statusHeight = 2;
-  let logHeight = Math.max(4, Math.min(8, Math.floor(ctx.rows * 0.16)));
+  let logHeight = ctx.wizardDraft ? 4 : Math.max(4, Math.min(8, Math.floor(ctx.rows * 0.16)));
   let bodyHeight = ctx.rows - headerHeight - logHeight - statusHeight;
 
   // Grant the sidebar one extra row when that flips it into the wizard-echo tier: the step
@@ -109,7 +111,9 @@ export function renderScreen(ctx: ScreenContext): string {
   });
 
   const shortcutsHeight = bodyHeight >= 26 ? 7 : 5;
-  const examplesHeight = Math.max(4, Math.min(9, Math.floor(bodyHeight * 0.24)));
+  const examplesHeight = ctx.wizardDraft
+    ? Math.max(7, Math.min(10, Math.floor(bodyHeight * 0.27)))
+    : Math.max(4, Math.min(9, Math.floor(bodyHeight * 0.24)));
   const inspectorHeight = Math.max(8, bodyHeight - shortcutsHeight - examplesHeight);
 
   // Last captured command + its exit for the inspector's "Last action" summary row.
@@ -124,11 +128,24 @@ export function renderScreen(ctx: ScreenContext): string {
     }
   }
 
-  // When the wizard draft already produces a command, lead the examples panel with the real thing.
-  let exampleCommands: string[] | undefined;
+  // A draft gets either an exact argv preview with its real mode/profile gate or a clear blocked reason.
+  let examplePanel: ExamplePanelState = { kind: "examples" };
   if (ctx.wizardDraft) {
     const built = buildWizardArgs(ctx.wizardDraft);
-    if (built.ok) exampleCommands = [`okx ${built.args.join(" ")}`];
+    if (!built.ok) {
+      examplePanel = { kind: "blocked", reason: built.reason };
+    } else if (ctx.state.mode !== "DEMO" && ctx.state.mode !== "LIVE") {
+      examplePanel = { kind: "blocked", reason: "select a DEMO or LIVE profile" };
+    } else {
+      const modeArgs = [ctx.state.mode === "DEMO" ? "--demo" : "--live", "--profile", sanitizeTerminalText(ctx.state.activeProfile)];
+      const args = [...built.args, ...modeArgs];
+      const displayArgs = args.map((arg) => (/\s/.test(arg) ? JSON.stringify(arg) : arg));
+      examplePanel = {
+        kind: "preview",
+        command: `okx ${displayArgs.join(" ")}`,
+        confirmation: `CONFIRM ${ctx.state.mode} CREATE BOT`,
+      };
+    }
   }
 
   const inspector = boxPane({
@@ -140,8 +157,8 @@ export function renderScreen(ctx: ScreenContext): string {
   const examples = boxPane({
     width: rightWidth,
     height: examplesHeight,
-    title: exampleCommands ? "Resulting command" : "Example commands",
-    lines: renderExampleCommandsLines(rightWidth - 2, examplesHeight - 2, exampleCommands),
+    title: examplePanel.kind === "preview" ? "Resulting command" : examplePanel.kind === "blocked" ? "Preview unavailable" : "Example commands",
+    lines: renderExampleCommandsLines(rightWidth - 2, examplesHeight - 2, examplePanel),
   });
   const shortcuts = boxPane({
     width: rightWidth,

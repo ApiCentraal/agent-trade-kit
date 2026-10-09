@@ -2,11 +2,12 @@
  * FILE: sessionLog.ts
  * PURPOSE: Keep a bounded ring buffer of TUI events and captured child-process output for the dashboard log pane.
  * LAYER: model
- * DEPENDS_ON: ../types.js
+ * DEPENDS_ON: ../types.js, ./sanitizeTerminalText.js
  * RULES:
  * - Entries are truncated per line and the buffer is capped so captured output can never exhaust memory or leak credential-sized blobs.
  */
 import type { TuiLogEntry } from "../types.js";
+import { sanitizeTerminalText } from "./sanitizeTerminalText.js";
 
 /** Maximum retained entries; older rows are dropped so the pane stays cheap to render. */
 const MAX_ENTRIES = 400;
@@ -22,16 +23,16 @@ const MAX_LINE = 240;
  * OUTPUT:
  * - TuiLogEntry[] — the same buffer, trimmed to MAX_ENTRIES
  * USES:
- * - none
+ * - sanitizeTerminalText
  * EFFECT:
  * - state
  * ERRORS:
  * - none
  * RULES:
- * - Caller-provided text is truncated before storage; secrets must never be passed in by callers.
+ * - Caller-provided text is sanitized and truncated before storage; secrets must never be passed in by callers.
  */
 function pushEntry(entries: TuiLogEntry[], level: TuiLogEntry["level"], text: string): TuiLogEntry[] {
-  entries.push({ time: new Date().toTimeString().slice(0, 8), level, text: text.slice(0, MAX_LINE) });
+  entries.push({ time: new Date().toTimeString().slice(0, 8), level, text: sanitizeTerminalText(text).slice(0, MAX_LINE) });
   if (entries.length > MAX_ENTRIES) entries.splice(0, entries.length - MAX_ENTRIES);
   return entries;
 }

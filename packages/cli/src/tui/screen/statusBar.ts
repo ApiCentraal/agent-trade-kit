@@ -2,13 +2,14 @@
  * FILE: statusBar.ts
  * PURPOSE: Render the bottom status line: brand+version, mode, market tickers, API status, latency, and clock.
  * LAYER: component
- * DEPENDS_ON: ../types.js, ./ansiPadEnd.js, ./ansiWidth.js, ./palette.js
+ * DEPENDS_ON: ../types.js, ./ansiPadEnd.js, ./ansiWidth.js, ./sanitizeTerminalText.js, ./palette.js
  * RULES:
- * - Ticker text comes from captured CLI output and is truncated to the status width; it is never fetched inside renderers.
+ * - Ticker text comes from captured CLI output, is sanitized, and is truncated to the status width; it is never fetched inside renderers.
  */
 import type { TuiDashboardState } from "../types.js";
 import { ansiPadEnd } from "./ansiPadEnd.js";
 import { ansiWidth } from "./ansiWidth.js";
+import { sanitizeTerminalText } from "./sanitizeTerminalText.js";
 import { BOLD, CYAN, DIM, GRAY, GREEN, RED, RESET, YELLOW } from "./palette.js";
 
 /**
@@ -49,9 +50,10 @@ export function renderStatusBar(
   const shown: string[] = [];
   let used = 0;
   for (const ticker of options.tickers) {
-    const cost = ansiWidth(ticker) + (shown.length > 0 ? 3 : 0);
+    const safeTicker = sanitizeTerminalText(ticker);
+    const cost = ansiWidth(safeTicker) + (shown.length > 0 ? 3 : 0);
     if (used + cost > tickerBudget) break;
-    shown.push(ticker);
+    shown.push(safeTicker);
     used += cost;
   }
   const tickerText =

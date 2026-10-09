@@ -2,7 +2,7 @@
  * FILE: tui-pane.test.ts
  * PURPOSE: Cover the pane-layout control room: ANSI helpers, pane rendering, nav dispatch, NL parser, wizard args, and log capture rules.
  * LAYER: test
- * DEPENDS_ON: node:test, node:assert, ../src/tui/screen/*.js, ../src/tui/wizard/*.js, ../src/tui/isInteractiveArgs.js, ../src/tui/runCliCommandCaptured.js
+ * DEPENDS_ON: node:test, node:assert, ../src/tui/screen/*.js (including exampleCommandsView, headerBar, logPaneView), ../src/tui/wizard/*.js, ../src/tui/isInteractiveArgs.js, ../src/tui/runCliCommandCaptured.js
  * RULES:
  * - No test performs exchange calls; captured-run tests use node itself, not the CLI.
  */
@@ -16,6 +16,9 @@ import { boxPane } from "../src/tui/screen/boxPane.ts";
 import { renderPillRow } from "../src/tui/screen/widgets/pillRow.ts";
 import { renderStepper } from "../src/tui/screen/widgets/stepper.ts";
 import { renderWizardForm } from "../src/tui/screen/wizardFormView.ts";
+import { renderExampleCommandsLines } from "../src/tui/screen/exampleCommandsView.ts";
+import { renderLogPane } from "../src/tui/screen/logPaneView.ts";
+import { renderHeaderBar } from "../src/tui/screen/headerBar.ts";
 import { renderScreen, PANE_MIN_COLUMNS, PANE_MIN_ROWS } from "../src/tui/screen/renderScreen.ts";
 import { buildNavItems } from "../src/tui/screen/sidebarModel.ts";
 import { buildInspectorModel } from "../src/tui/screen/inspectorModel.ts";
@@ -101,6 +104,45 @@ test("renderScreen composes the control-room panes and rejects smaller terminals
   );
 });
 
+/**
+ * PURPOSE: Verify that the integrated control room previews the actual mode/profile command and preserves session context.
+ * INPUT:
+ * - fixed 150×42 screen context — valid draft, captured prior action, and active navigation key
+ * OUTPUT:
+ * - void — assertions fail when any overview marker or safety phrase is missing
+ * USES:
+ * - renderScreen, stripAnsi
+ * EFFECT:
+ * - none
+ * ERRORS:
+ * - Throws assertion errors when the renderer omits command, mode, confirmation, or active-key context
+ * RULES:
+ * - Rendering only builds display text; this test must never execute the resulting command.
+ */
+test("renderScreen shows exact preview gate, last action, and active sidebar item", () => {
+  const rendered = stripAnsi(renderScreen({
+    ...CTX,
+    logEntries: [
+      { time: "10:00:00", level: "info", text: "$ okx market ticker BTC-USDT" },
+      { time: "10:00:01", level: "info", text: "exit 0 — L for full log" },
+    ],
+    wizardDraft: {
+      botType: "grid", instId: "BTC-USDT", market: "spot", amount: "100", ccy: "USDT",
+      risk: "low", minPx: "60000", maxPx: "70000", gridNum: "20",
+    },
+    wizardStep: 4,
+    activeKey: "5",
+    columns: 150,
+    rows: 42,
+  }));
+  const compact = rendered.replace(/\s+/g, " ");
+  assert.ok(compact.includes("Resulting command"));
+  assert.ok(compact.includes("--demo --profile demo"));
+  assert.ok(compact.includes("CONFIRM DEMO CREATE BOT"));
+  assert.ok(compact.includes("Last action"));
+  assert.ok(compact.includes("▸Analytics"));
+});
+
 test("pill rows highlight only the active option", () => {
   const row = renderPillRow(["Low", "Medium", "High"], 1);
   const plain = stripAnsi(row);
@@ -143,6 +185,95 @@ test("inspector flags missing credentials and summarizes a wizard draft", () => 
   assert.ok(model.fields.some((f) => f.label === "Pair" && f.value === "BTC-USDT"));
   assert.ok(model.estimates.some((e) => e.label === "Total orders" && e.value.startsWith("20")));
   assert.ok(model.checks.every((c) => c.status !== "fail"));
+});
+
+/**
+ * PURPOSE: Ensure long wizard commands wrap without losing arguments and show the exact mode-aware confirmation phrase.
+ * INPUT:
+ * - fixed preview state — representative bot-create argv and confirmation intent
+ * OUTPUT:
+ * - void — assertions fail if any token or confirmation text is missing
+ * USES:
+ * - renderExampleCommandsLines, stripAnsi
+ * EFFECT:
+ * - none
+ * ERRORS:
+ * - Throws assertion errors when the preview clips a token or omits the confirmation phrase
+ * RULES:
+ * - Rendering the preview is display-only and must never invoke a CLI command.
+ */
+test("resulting command preview wraps all args and prints the exact confirmation phrase", () => {
+  const command = "okx bot grid create --instId BTC-USDT --algoOrdType grid --minPx 60000 --maxPx 70000 --gridNum 20 --quoteSz 100 --runType 1 --demo --profile demo";
+  const lines = renderExampleCommandsLines(40, 12, {
+    kind: "preview",
+    command,
+    confirmation: "CONFIRM DEMO CREATE BOT",
+  });
+  const plain = lines.map(stripAnsi).map((line) => line.trim()).join(" ").replace(/\s+/g, " ");
+  assert.ok(plain.includes(command));
+  assert.ok(plain.includes("CONFIRM DEMO CREATE BOT"));
+});
+
+/**
+ * PURPOSE: Confirm that dynamic terminal escape sequences are removed before they reach visible TUI output.
+ * INPUT:
+ * - hostile profile/log fixtures — values containing CSI and OSC control sequences
+ * OUTPUT:
+ * - void — assertions fail if raw cursor/title controls survive
+ * USES:
+ * - SessionLog, renderHeaderBar, renderLogPane, stripAnsi
+ * EFFECT:
+ * - none
+ * ERRORS:
+ * - Throws assertion errors when a control sequence remains in stored/rendered content
+ * RULES:
+ * - Normal printable text must remain available after sanitization.
+ */
+test("profile and captured child output cannot inject terminal control sequences", () => {
+  const hostileState = { ...STATE, activeProfile: "demo\u001b[2J\u001b]0;injected\u0007" };
+  const header = renderHeaderBar(hostileState, 120).join("\n");
+  assert.equal(header.includes("\u001b[2J"), false);
+  assert.equal(header.includes("injected"), false);
+
+  const log = new SessionLog();
+  log.add("info", "\u001b[2Jclean\u001b[0m\u001b]0;title\u0007");
+  assert.equal(log.all()[0].text, "clean");
+  const rendered = renderLogPane([{ time: "00:00:00", level: "info", text: "\u001b[2Jvisible" }], 80, 4).join("\n");
+  assert.equal(rendered.includes("\u001b[2J"), false);
+  assert.ok(stripAnsi(rendered).includes("visible"));
+
+  const screen = renderScreen({
+    ...CTX,
+    state: hostileState,
+    tickers: ["BTC 10\u001b[2Jhidden"],
+    columns: 150,
+    rows: 42,
+  });
+  assert.equal(screen.includes("\u001b[2J"), false);
+  assert.ok(stripAnsi(screen).includes("BTC 10hidden"));
+});
+
+/**
+ * PURPOSE: Keep failed or incomplete wizard drafts from displaying generic example commands as if they were the deploy preview.
+ * INPUT:
+ * - blocked preview state — validation reason from the command builder
+ * OUTPUT:
+ * - void — assertions fail if the blocked state is unclear
+ * USES:
+ * - renderExampleCommandsLines, stripAnsi
+ * EFFECT:
+ * - none
+ * ERRORS:
+ * - Throws assertion errors when the preview panel hides its blocked reason
+ * RULES:
+ * - Invalid drafts must not be represented by a command that could appear executable.
+ */
+test("blocked resulting-command panel explains missing setup rather than showing unrelated examples", () => {
+  const lines = renderExampleCommandsLines(26, 3, { kind: "blocked", reason: "capital amount missing or invalid" });
+  const plain = stripAnsi(lines.join(" ")).replace(/\s+/g, " ");
+  assert.ok(plain.includes("Complete setup"));
+  assert.ok(plain.includes("capital amount"));
+  assert.equal(plain.includes("okx market ticker"), false);
 });
 
 test("session log bounds entries and keeps chronological tail", () => {

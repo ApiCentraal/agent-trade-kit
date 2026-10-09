@@ -2,14 +2,15 @@
  * FILE: headerBar.ts
  * PURPOSE: Render the top identity bar: brand, zone tabs, DEMO/LIVE segmented mode, profile, and API status.
  * LAYER: component
- * DEPENDS_ON: ../types.js, ./ansiPadEnd.js, ./ansiSlice.js, ./ansiWidth.js, ./palette.js
+ * DEPENDS_ON: ../types.js, ./ansiPadEnd.js, ./ansiSlice.js, ./ansiWidth.js, ./sanitizeTerminalText.js, ./palette.js
  * RULES:
- * - Displays only non-secret state; profile names are sanitized of control characters before rendering.
+ * - Displays only non-secret state; profile names are sanitized before rendering into the terminal.
  */
 import type { TuiDashboardState } from "../types.js";
 import { ansiPadEnd } from "./ansiPadEnd.js";
 import { ansiSlice } from "./ansiSlice.js";
 import { ansiWidth } from "./ansiWidth.js";
+import { sanitizeTerminalText } from "./sanitizeTerminalText.js";
 import { BLACK, BOLD, CYAN, DIM, GRAY, GREEN, GREEN_BG, RED_BG, RESET, WHITE, YELLOW } from "./palette.js";
 
 /** Top navigation zones; caret marks a dropdown affordance like the target header. */
@@ -20,28 +21,6 @@ const ZONES: Array<{ label: string; caret: boolean }> = [
   { label: "Developer", caret: true },
   { label: "Docs", caret: true },
 ];
-
-/** Control-character class kept as a literal so source files never embed raw control bytes. */
-const CONTROL_CHARS = new RegExp("\\p{Cc}", "gu");
-
-/**
- * PURPOSE: Replace control characters in profile-derived text with spaces before rendering.
- * INPUT:
- * - text: string — profile or path text from user configuration
- * OUTPUT:
- * - string — sanitized text safe for single-line terminal rendering
- * USES:
- * - none
- * EFFECT:
- * - none
- * ERRORS:
- * - none
- * RULES:
- * - Applied to every config-sourced string before it reaches a pane line.
- */
-function sanitizeText(text: string): string {
-  return text.replace(CONTROL_CHARS, " ");
-}
 
 /**
  * PURPOSE: Build the two-line header: brand + segmented DEMO/LIVE + zone tabs + profile + API status.
@@ -60,7 +39,7 @@ function sanitizeText(text: string): string {
  * - The active mode segment is filled (green for DEMO, red for LIVE); secrets are never displayed.
  */
 export function renderHeaderBar(state: TuiDashboardState, width: number): string[] {
-  const profile = ansiSlice(sanitizeText(state.activeProfile), 16);
+  const profile = ansiSlice(sanitizeTerminalText(state.activeProfile), 16);
   const demoSeg = state.mode === "DEMO" ? `${GREEN_BG}${BLACK} DEMO ${RESET}` : `${DIM} DEMO ${RESET}`;
   const liveSeg = state.mode === "LIVE" ? `${RED_BG}${WHITE} LIVE ${RESET}` : `${DIM} LIVE ${RESET}`;
   const modeSeg = state.mode === "NOT CONFIGURED" ? `${YELLOW} NOT CONFIGURED ${RESET}` : `${demoSeg}${liveSeg}`;

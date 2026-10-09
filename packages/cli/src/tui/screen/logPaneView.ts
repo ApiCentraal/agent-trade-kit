@@ -2,12 +2,13 @@
  * FILE: logPaneView.ts
  * PURPOSE: Render the bottom log pane: tab strip (CLI Logs active) plus timestamped captured output.
  * LAYER: component
- * DEPENDS_ON: ../types.js, ./boxPane.js, ./palette.js
+ * DEPENDS_ON: ../types.js, ./boxPane.js, ./sanitizeTerminalText.js, ./palette.js
  * RULES:
- * - Entries are rendered newest-last; the extra tabs are visual anchors matching the target and stay dim.
+ * - Entries are rendered newest-last after terminal-control sanitization; the extra tabs are visual anchors matching the target and stay dim.
  */
 import type { TuiLogEntry } from "../types.js";
 import { boxPane } from "./boxPane.js";
+import { sanitizeTerminalText } from "./sanitizeTerminalText.js";
 import { CYAN, DIM, GRAY, GREEN, RED, RESET, WHITE, YELLOW } from "./palette.js";
 
 /** Tab labels mirroring the target log pane; only the first is active (session log). */
@@ -42,11 +43,12 @@ export function renderLogPane(entries: TuiLogEntry[], width: number, height: num
   for (const entry of visible) {
     const color = entry.level === "error" ? RED : entry.level === "warn" ? YELLOW : CYAN;
     const tag = entry.level === "error" ? "ERR" : entry.level === "warn" ? "WARN" : "INFO";
-    const text = entry.text.startsWith("$ ")
-      ? `${WHITE}${entry.text}${RESET}`
-      : entry.text.startsWith("exit ")
-        ? `${DIM}${entry.text}${RESET}`
-        : entry.text;
+    const safeText = sanitizeTerminalText(entry.text);
+    const text = safeText.startsWith("$ ")
+      ? `${WHITE}${safeText}${RESET}`
+      : safeText.startsWith("exit ")
+        ? `${DIM}${safeText}${RESET}`
+        : safeText;
     lines.push(`${GRAY}${entry.time}${RESET}  ${color}${tag}${RESET}  ${text}`);
   }
   while (lines.length < inner) lines.push(`${DIM}·${RESET}`);
