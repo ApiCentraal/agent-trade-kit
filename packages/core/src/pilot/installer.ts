@@ -15,7 +15,8 @@ import {
   renameSync,
 } from "node:fs";
 import { createHash } from "node:crypto";
-import { homedir, platform, arch } from "node:os";
+import { platform, arch } from "node:os";
+import { homeDir } from "../utils/home-dir.js";
 import { join, dirname } from "node:path";
 import { download, downloadText } from "../utils/http.js";
 
@@ -298,7 +299,7 @@ export async function installPilotBinary(
 
   const platformDir = getPlatformDir()!;
   const binaryName = getBinaryName();
-  const resolvedDest = destPath ?? join(homedir(), ".okx", "bin", binaryName);
+  const resolvedDest = destPath ?? join(homeDir(), ".okx", "bin", binaryName);
   const tmpPath = resolvedDest + ".tmp";
 
   mkdirSync(dirname(resolvedDest), { recursive: true });

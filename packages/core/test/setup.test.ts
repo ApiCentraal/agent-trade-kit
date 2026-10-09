@@ -346,7 +346,9 @@ describe("getConfigPath", () => {
     setPlatform("linux");
     process.env.XDG_CONFIG_HOME = "/custom/config";
     const result = getConfigPath("claude-desktop")!;
-    assert.ok(result.startsWith("/custom/config"), `expected XDG prefix, got: ${result}`);
+    // The test fakes process.platform=linux but path.join still emits Windows
+    // separators on a Windows host — normalize before comparing.
+    assert.ok(result.replace(/\\/g, "/").startsWith("/custom/config"), `expected XDG prefix, got: ${result}`);
     assert.ok(result.endsWith("claude_desktop_config.json"));
   });
 

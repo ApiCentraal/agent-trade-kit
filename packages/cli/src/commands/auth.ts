@@ -10,6 +10,7 @@ import {
   updateAuthBinaryCache,
   clearAuthBinaryCache,
   readFullConfig,
+  authSpawnTarget,
 } from "@agent-tradekit/core";
 import type { AuthLocalStatus, CdnChecksum } from "@agent-tradekit/core";
 import { outputLine, errorLine } from "../formatter.js";
@@ -21,10 +22,10 @@ import type { CliValues } from "../parser.js";
 
 /** Spawn okx-auth with inherited stdio and wait for exit. */
 function runOkxAuth(args: string[]): Promise<number> {
-  const binPath = getAuthBinaryPath();
+  const target = authSpawnTarget(getAuthBinaryPath(), args);
 
   return new Promise((resolve, reject) => {
-    const child = spawn(binPath, args, {
+    const child = spawn(target.command, target.args, {
       stdio: "inherit",
     });
 
@@ -40,10 +41,10 @@ function runOkxAuth(args: string[]): Promise<number> {
 
 /** Spawn okx-auth, pipe stdout to caller's stdout, inherit stderr + stdin. */
 function runOkxAuthCapture(args: string[]): Promise<{ code: number; stdout: string }> {
-  const binPath = getAuthBinaryPath();
+  const target = authSpawnTarget(getAuthBinaryPath(), args);
 
   return new Promise((resolve, reject) => {
-    const child = spawn(binPath, args, {
+    const child = spawn(target.command, target.args, {
       stdio: ["inherit", "pipe", "inherit"],
     });
 

@@ -71,7 +71,8 @@ describe("printTable with envContext", () => {
     setEnvContext({ demo: true, profile: "hk-demo" });
     printTable([{ instId: "BTC-USDT-SWAP", instType: "SWAP", last: "67085.1" }]);
     const combined = out.join("");
-    const lines = combined.split("\n");
+    // Normalize CRLF: outputLine() uses os.EOL, which is "\r\n" on Windows.
+    const lines = combined.replace(/\r\n/g, "\n").split("\n");
     assert.equal(lines[0], "Environment: demo (simulated trading)");
     assert.equal(lines[1], ""); // blank line
   });
@@ -79,7 +80,7 @@ describe("printTable with envContext", () => {
   it("AC-2: first line is 'Environment: live' when demo=false", () => {
     setEnvContext({ demo: false, profile: "main" });
     printTable([{ instId: "BTC-USDT-SWAP" }]);
-    const lines = out.join("").split("\n");
+    const lines = out.join("").replace(/\r\n/g, "\n").split("\n");
     assert.equal(lines[0], "Environment: live");
     assert.equal(lines[1], ""); // blank line
   });

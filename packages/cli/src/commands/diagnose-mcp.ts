@@ -3,9 +3,10 @@
  *
  * All checks use Node.js built-ins only (no external dependencies).
  */
+import os from "node:os";
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
+
 import { spawnSync, spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -14,6 +15,7 @@ import {
   allToolSpecs,
   CLIENT_NAMES,
   DEFAULT_MODULES,
+  homeDir,
 } from "@agent-tradekit/core";
 import type { ClientId } from "@agent-tradekit/core";
 import {
@@ -174,7 +176,7 @@ function checkJsonMcpConfig(configPath: string): "found" | "not-configured" | "p
  * checking the other.
  */
 function checkClaudeCodeConfig(): "found" | "not-configured" | "parse-error" | "missing" {
-  const home = os.homedir();
+  const home = homeDir();
   const candidates = [
     path.join(home, ".claude", "settings.json"),
     path.join(home, ".claude.json"),
@@ -383,7 +385,7 @@ function readLogTail(logPath: string): string[] {
 /** Build the platform-specific list of MCP log file candidates. */
 function getMcpLogCandidates(): string[] {
   if (process.platform === "darwin") {
-    const logsDir = path.join(os.homedir(), "Library", "Logs", "Claude");
+    const logsDir = path.join(homeDir(), "Library", "Logs", "Claude");
     const candidates = [
       path.join(logsDir, "mcp.log"),
       path.join(logsDir, "mcp-server-okx-trade-mcp.log"),
@@ -399,11 +401,11 @@ function getMcpLogCandidates(): string[] {
     return candidates;
   }
   if (process.platform === "win32") {
-    const appData = process.env.APPDATA ?? path.join(os.homedir(), "AppData", "Roaming");
+    const appData = process.env.APPDATA ?? path.join(homeDir(), "AppData", "Roaming");
     return [path.join(appData, "Claude", "logs", "mcp.log")];
   }
   // Linux - XDG
-  const configHome = process.env.XDG_CONFIG_HOME ?? path.join(os.homedir(), ".config");
+  const configHome = process.env.XDG_CONFIG_HOME ?? path.join(homeDir(), ".config");
   return [path.join(configHome, "Claude", "logs", "mcp.log")];
 }
 

@@ -1,4 +1,4 @@
-import { tmpdir, homedir } from "node:os";
+import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { mkdirSync, rmSync, existsSync, copyFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -21,6 +21,7 @@ import {
   getPublicKey,
   serverSideVerify,
   type VerificationResult,
+  homeDir,
 } from "@agent-tradekit/core";
 import { outputLine, errorLine } from "../formatter.js";
 
@@ -61,7 +62,7 @@ export type SkillExec = typeof execFileSync;
 
 /** Resolve the installed content directory for a skill. */
 function getSkillContentDir(name: string): string {
-  return join(homedir(), ".agents", "skills", name);
+  return join(homeDir(), ".agents", "skills", name);
 }
 
 /** Notice shown after installing a third-party skill. */

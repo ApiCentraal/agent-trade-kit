@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { homedir } from "node:os";
 import { fetch as undiciFetch } from "undici";
+import { homeDir } from "./home-dir.js";
 
 // Swappable at test time so unit tests can intercept fetch without mocking the
 // undici module (which is bound at import time before tests run).
@@ -9,7 +9,13 @@ let _fetchImpl: typeof undiciFetch = undiciFetch;
 /** @internal — tests only */ export function _setFetchImpl(fn: typeof undiciFetch): void { _fetchImpl = fn; }
 /** @internal — tests only */ export function _resetFetchImpl(): void { _fetchImpl = undiciFetch; }
 
-const CACHE_FILE = join(homedir(), ".okx", "update-check.json");
+/**
+ * Update-check cache location under the user's home.
+ * Resolved per call so test environments that override HOME stay isolated.
+ */
+function cacheFile(): string {
+  return join(homeDir(), ".okx", "update-check.json");
+}
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const NEGATIVE_CHECK_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 const DEFAULT_REGISTRY = "https://registry.npmjs.org/";
@@ -28,8 +34,8 @@ type UpdateCache = Record<string, PackageCache>;
 
 function readCache(): UpdateCache {
   try {
-    if (existsSync(CACHE_FILE)) {
-      return JSON.parse(readFileSync(CACHE_FILE, "utf-8")) as UpdateCache;
+    if (existsSync(cacheFile())) {
+      return JSON.parse(readFileSync(cacheFile(), "utf-8")) as UpdateCache;
     }
   } catch {
     // ignore corrupt cache
@@ -39,8 +45,8 @@ function readCache(): UpdateCache {
 
 function writeCache(cache: UpdateCache): void {
   try {
-    mkdirSync(join(homedir(), ".okx"), { recursive: true });
-    writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), "utf-8");
+    mkdirSync(join(homeDir(), ".okx"), { recursive: true });
+    writeFileSync(cacheFile(), JSON.stringify(cache, null, 2), "utf-8");
   } catch {
     // ignore write failures
   }
@@ -91,7 +97,7 @@ export function buildNpmrcCandidates(): string[] {
     dir = parent;
   }
 
-  add(join(homedir(), ".npmrc"));
+  add(join(homeDir(), ".npmrc"));
   if (process.platform !== "win32") {
     add("/etc/npmrc");
   }

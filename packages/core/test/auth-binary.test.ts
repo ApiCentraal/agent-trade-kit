@@ -198,6 +198,11 @@ describe("execAuthTokenWindows (pipe transport)", () => {
   /** Build a fresh socket path the mock binary can connect to. */
   function makePipePathFactory(): () => string {
     let counter = 0;
+    // Windows has no filesystem sockets: net.Server.listen() there requires
+    // the \\.\pipe\ namespace that the production code uses.
+    if (process.platform === "win32") {
+      return () => `\\\\.\\pipe\\okx-auth-test-${process.pid}-${++counter}`;
+    }
     return () => join(tmpDir, `sock-${++counter}`);
   }
 

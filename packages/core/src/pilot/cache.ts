@@ -5,13 +5,13 @@ import {
   unlinkSync,
   renameSync,
 } from "node:fs";
-import { homedir } from "node:os";
+import { homeDir } from "../utils/home-dir.js";
 import { join, dirname } from "node:path";
 import type { PilotCacheEntry, PilotCacheFile } from "./types.js";
 
 /** Default cache file path (overridable via OKX_PILOT_CACHE_PATH for testing). */
 export function getDefaultCachePath(): string {
-  return process.env.OKX_PILOT_CACHE_PATH || join(homedir(), ".okx", "pilot-cache.json");
+  return process.env.OKX_PILOT_CACHE_PATH || join(homeDir(), ".okx", "pilot-cache.json");
 }
 
 /**

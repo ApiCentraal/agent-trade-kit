@@ -48,13 +48,15 @@ describe("TradeLogger.getLogPath", () => {
   it("returns trade-YYYY-MM-DD.log in the log dir", () => {
     const logger = new TradeLogger("info", "/tmp/test-logs");
     const d = new Date("2026-03-03T00:00:00.000Z");
-    assert.equal(logger.getLogPath(d), "/tmp/test-logs/trade-2026-03-03.log");
+    // path.join() uses the platform separator — compare against join() output
+    // rather than a literal POSIX path so the assertion holds on Windows.
+    assert.equal(logger.getLogPath(d), path.join("/tmp/test-logs", "trade-2026-03-03.log"));
   });
 
   it("uses UTC date in filename", () => {
     const logger = new TradeLogger("info", "/tmp/test-logs");
     const d = new Date("2026-01-09T23:59:59.999Z");
-    assert.equal(logger.getLogPath(d), "/tmp/test-logs/trade-2026-01-09.log");
+    assert.equal(logger.getLogPath(d), path.join("/tmp/test-logs", "trade-2026-01-09.log"));
   });
 });
 

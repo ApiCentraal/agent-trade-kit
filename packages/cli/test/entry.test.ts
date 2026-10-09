@@ -36,11 +36,21 @@ describe("CLI --version flag", () => {
 });
 
 describe("CLI entry via symlink", () => {
-  it("should produce output when invoked through a symlink (regression for issue #21)", () => {
+  it("should produce output when invoked through a symlink (regression for issue #21)", (t) => {
     const dist = join(__dirname, "../dist/index.js");
     const tmp = mkdtempSync(join(tmpdir(), "okx-symlink-"));
     const link = join(tmp, "okx");
-    symlinkSync(dist, link);
+    try {
+      symlinkSync(dist, link);
+    } catch (e: unknown) {
+      // Windows requires Developer Mode or admin rights to create symlinks;
+      // npm uses .cmd shims there instead, so this regression is not
+      // reproducible without symlink support.
+      if ((e as NodeJS.ErrnoException).code === "EPERM") {
+        return t.skip("symlink creation not permitted on this platform");
+      }
+      throw e;
+    }
     try {
       let output = "";
       try {

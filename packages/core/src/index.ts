@@ -15,6 +15,7 @@ export type { RequestResult } from "./client/types.js";
 export { readTomlProfile, readFullConfig, writeFullConfig, configFilePath, tomlStringify } from "./config/toml.js";
 export type { OkxProfile, OkxTomlConfig } from "./config/toml.js";
 export { checkForUpdates, fetchLatestVersion, isNewerVersion, fetchDistTags } from "./utils/update-check.js";
+export { homeDir } from "./utils/home-dir.js";
 export { TradeLogger } from "./utils/logger.js";
 export type { LogLevel, LogEntry } from "./utils/logger.js";
 export { runSetup, printSetupUsage, getConfigPath, SUPPORTED_CLIENTS, CLIENT_NAMES } from "./setup.js";
@@ -51,6 +52,7 @@ export { findDateIdx, formatDisplayTitle, inferExpiryMsFromInstId, extractSeries
 export type { BinaryResult, BinaryRequestOptions } from "./client/types.js";
 export { getPilotBinaryPath } from "./pilot/binary.js";
 export { getAuthBinaryPath, execAuthToken, execAuthStatus } from "./auth/binary.js";
+export { authSpawnTarget } from "./auth/binary-shared.js";
 export { getAuthStatus, fetchAuthCdnChecksum, installAuthBinary, removeAuthBinary, AUTH_CDN_PATH_PREFIX } from "./auth/installer.js";
 export type { AuthLocalStatus } from "./auth/installer-types.js";
 export { ensureAuthBinaryLatest, updateAuthBinaryCache, clearAuthBinaryCache } from "./auth/update-check.js";

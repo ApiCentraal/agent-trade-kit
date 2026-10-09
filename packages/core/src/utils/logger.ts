@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import os from "node:os";
+import { homeDir } from "./home-dir.js";
 
 export type LogLevel = "error" | "warn" | "info" | "debug";
 
@@ -86,7 +86,7 @@ export class TradeLogger {
 
   constructor(logLevel: LogLevel = "info", logDir?: string) {
     this.logLevel = logLevel;
-    this.logDir = logDir ?? path.join(os.homedir(), ".okx", "logs");
+    this.logDir = logDir ?? path.join(homeDir(), ".okx", "logs");
     const parsed = parseInt(process.env.OKX_LOG_RETENTION_DAYS ?? "", 10);
     const retentionDays = isNaN(parsed) || parsed < 0 ? DEFAULT_RETENTION_DAYS : parsed;
     pruneOldLogs(this.logDir, retentionDays, Date.now());

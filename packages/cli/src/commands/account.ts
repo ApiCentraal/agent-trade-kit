@@ -1,7 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as os from "node:os";
-import type { ToolRunner } from "@agent-tradekit/core";
+
+import { homeDir, type ToolRunner } from "@agent-tradekit/core";
 import {outputLine, printJson, printKv, printTable} from "../formatter.js";
 
 function getData(result: unknown): unknown {
@@ -393,7 +393,7 @@ function readAuditLogs(logDir: string, days = 7): LogEntry[] {
 export function cmdAccountAudit(
   opts: { limit?: string; tool?: string; since?: string; json: boolean },
 ): void {
-  const logDir = path.join(os.homedir(), ".okx", "logs");
+  const logDir = path.join(homeDir(), ".okx", "logs");
   const limit = Math.min(Number(opts.limit) || 20, 100);
 
   let entries = readAuditLogs(logDir);
