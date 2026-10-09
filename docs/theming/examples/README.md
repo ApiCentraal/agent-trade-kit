@@ -7,7 +7,7 @@ reference when restyling the terminal theme.
 | File | Screen |
 | --- | --- |
 | `01-control-room.png` | Multi-pane control room: header with mode/profile/API status, grouped sidebar with wizard-step echo, create-bot form, configuration inspector, CLI log pane, and ticker status bar |
-| `02-bot-wizard.png` | Create-bot wizard at the deploy step: preview text, `CONFIRM DEMO …` prompt, live inspector summary, and validation checklist |
+| `02-bot-wizard.png` | Create-bot wizard at the deploy step: wrapped resulting command with mode/profile flags, exact `CONFIRM DEMO CREATE BOT` phrase, final review prompt, live inspector summary, and validation checklist |
 | `03-mutation-menu.png` | Trading operations submenu (orders, transfers, bots, Earn, events) |
 | `04-order-preview-confirmation.png` | Order flow with instrument pick list, TP/SL prompts, and the exact `CONFIRM DEMO …` preview |
 | `05-bot-monitor-menu.png` | Grid/DCA bot monitoring submenu |
